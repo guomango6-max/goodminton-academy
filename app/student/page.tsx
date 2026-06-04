@@ -249,6 +249,12 @@ const studentCopy = {
     opened: '已打开学员档案。',
     timeout: '读取超时，请再试一次。',
     failed: '读取失败。',
+    sectionTag: '学员数据',
+    sending: '正在发送给教练...',
+    sendFailedGeneric: '发送失败。',
+    sendTimeout: '发送超时',
+    rankBadgeLabel: '等级徽章',
+    featuredLabel: '收藏',
   },
   en: {
     portal: 'Student Map',
@@ -334,6 +340,12 @@ const studentCopy = {
     opened: 'Student profile opened.',
     timeout: 'Request timed out. Please try again.',
     failed: 'Load failed.',
+    sectionTag: 'Student data',
+    sending: 'Sending to the coach...',
+    sendFailedGeneric: 'Send failed.',
+    sendTimeout: 'Send timed out',
+    rankBadgeLabel: 'rank badge',
+    featuredLabel: 'Featured',
   },
 } as const;
 
@@ -383,7 +395,118 @@ const labelTranslations: Record<string, string> = {
   星耀: 'Star',
   最强王者: 'Master',
   荣耀王者: 'Grandmaster',
+  // Achievement profile field default
+  学生档案: 'Student Profile',
+  // Achievement titles (FALLBACK_ACHIEVEMENTS)
+  拍头高: 'Racket head up',
+  不怕落后: 'No fear of deficit',
+  小动作: 'Compact motion',
+  三问侦探: 'Three-question detective',
+  深区: 'Deep zone',
+  回中: 'Recover to base',
+  接发上前: 'Press after return',
+  核心开关: 'Core switch',
+  水壶准时: 'Bottle on time',
+  鞋带检查: 'Laces check',
+  第一拍冷静: 'First-shot composure',
+  第二拍预判: 'Second-shot read',
+  收藏家: 'Collector',
+  // Skill tree leaves — serve & receive (发接发)
+  发小区: 'Short serve',
+  发平高: 'Flick serve',
+  搓放: 'Net spin',
+  推压: 'Push',
+  切抹: 'Slice push',
+  防偷后场: 'Guard against flick',
+  // Skill tree leaves — front court (前场)
+  勾对角: 'Cross-court hook',
+  扑杀: 'Net kill',
+  封网: 'Net cover',
+  挡网: 'Net block',
+  前场第二拍: 'Front-court second shot',
+  // Skill tree leaves — back court forehand (正手)
+  正手高远球: 'Forehand clear',
+  正手平高球: 'Forehand flat clear',
+  正手劈吊: 'Forehand slice drop',
+  正手滑板: 'Forehand reverse slice',
+  正手杀球: 'Forehand smash',
+  正手软压: 'Forehand soft push',
+  正手点杀: 'Forehand stick smash',
+  // Skill tree leaves — back court round-the-head (头顶)
+  头顶高远球: 'Round-the-head clear',
+  头顶平高球: 'Round-the-head flat clear',
+  头顶滑板吊球: 'Round-the-head reverse slice drop',
+  头顶劈吊: 'Round-the-head slice drop',
+  头顶杀球: 'Round-the-head smash',
+  // Skill tree leaves — back court backhand (反手)
+  反手高远球: 'Backhand clear',
+  反手劈吊: 'Backhand slice drop',
+  反手滑板吊: 'Backhand reverse slice drop',
+  反手抽球: 'Backhand drive',
+  // Skill tree leaves — midcourt (中场)
+  平抽: 'Drive',
+  反抽: 'Backhand drive (mid)',
+  拦截: 'Intercept',
+  腰部带动: 'Hip-led drive',
+  // Skill tree leaves — footwork moves (移动)
+  交叉步: 'Crossover step',
+  并步: 'Side shuffle',
+  垫步: 'Chasse step',
+  蹬跨步: 'Lunge step',
+  跳腾步: 'Jump step',
+  中国跳: 'China jump',
+  马来步: 'Malay step',
+  李矛步: 'Li Mao step',
+  双脚跳: 'Two-foot jump',
+  // Skill tree nodes — tactics (战术)
+  空间战术: 'Space tactics',
+  时间战术: 'Time tactics',
+  节奏战术: 'Rhythm tactics',
+  线路战术: 'Line tactics',
+  对人战术: 'Opponent tactics',
+  阵型战术: 'Formation tactics',
+  // Skill tree nodes — physical (身体)
+  力量: 'Strength',
+  速度: 'Speed',
+  敏捷: 'Agility',
+  耐力: 'Endurance',
+  平衡: 'Balance',
+  协调: 'Coordination',
+  // Skill tree nodes — mental (心理)
+  抗压能力: 'Pressure tolerance',
+  恢复速度: 'Recovery speed',
+  平静沟通: 'Calm communication',
+  专注保持: 'Sustained focus',
+  决策勇气: 'Decision courage',
+  复盘诚实: 'Honest review',
+  // Skill tree nodes — attitude (态度)
+  反馈具体: 'Specific feedback',
+  愿意试错: 'Willing to try',
+  训练自觉: 'Self-driven',
+  认真负责: 'Responsible',
+  准时完成: 'On-time completion',
+  主动沟通: 'Proactive communication',
 };
+
+// Translations for FALLBACK_ACHIEVEMENTS description tooltips (rendered via title attr in EN).
+const achievementDescTranslations: Record<string, string> = {
+  '启动反应进入训练档案。': 'Reaction start in the training record.',
+  '拍头高度进入技术档案。': 'Racket head height in the technique record.',
+  '比分落后时继续执行。': 'Keep executing when behind in score.',
+  '前场动作缩短。': 'Front-court motion shortened.',
+  '能问出空间、节奏、对人的问题。': 'Asks space, rhythm, and opponent questions.',
+  '后场深度继续观察。': 'Back-court depth under continued observation.',
+  '击球后回位。': 'Recover to base after the shot.',
+  '接发后的前压意识。': 'Forward-press intent after the return.',
+  '核心支撑进入身体档案。': 'Core support in the physical record.',
+  '好玩但不严肃评价。': 'Light-hearted, not strictly evaluated.',
+  '训练安全习惯。': 'Training safety habit.',
+  '待解锁。': 'Locked.',
+};
+
+function tDesc(value: string, lang: Lang) {
+  return lang === 'en' ? achievementDescTranslations[value] || value : value;
+}
 
 function tLabel(value: string, lang: Lang) {
   return lang === 'en' ? labelTranslations[value] || value : value;
@@ -538,11 +661,12 @@ function Pill({ children, active }: { children: React.ReactNode; active?: boolea
 }
 
 function Section({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
+  const { lang } = useLang();
   return (
     <section id={id} className="scroll-mt-28 overflow-hidden rounded-lg border border-[#dfe7dc] bg-[#fffdf8] shadow-sm lg:scroll-mt-6">
       <div className="flex items-center justify-between border-b border-[#dfe7dc] bg-[#f4f8f1] px-5 py-3">
         <div className="text-sm font-semibold text-slate-900">{title}</div>
-        <div className="text-xs text-[#16845f]">学员数据</div>
+        <div className="text-xs text-[#16845f]">{studentCopy[lang].sectionTag}</div>
       </div>
       <div className="p-4 sm:p-5">
         {children}
@@ -949,7 +1073,12 @@ function rankBadgeConfig(rank: string) {
 }
 
 function RankBadge({ rank, size = 'md' }: { rank: string; size?: 'sm' | 'md' | 'lg' }) {
+  const { lang } = useLang();
   const config = rankBadgeConfig(rank);
+  const ariaLabel =
+    lang === 'en'
+      ? `${tLabel(rank, lang)} ${studentCopy.en.rankBadgeLabel}`
+      : `${rank}${studentCopy.zh.rankBadgeLabel}`;
   const dimension = size === 'lg' ? 72 : size === 'sm' ? 34 : 48;
   const innerShape =
     config.shape === 'diamond' ? (
@@ -969,7 +1098,7 @@ function RankBadge({ rank, size = 'md' }: { rank: string; size?: 'sm' | 'md' | '
     );
 
   return (
-    <svg width={dimension} height={dimension} viewBox="0 0 100 100" aria-label={`${rank}等级徽章`} role="img">
+    <svg width={dimension} height={dimension} viewBox="0 0 100 100" aria-label={ariaLabel} role="img">
       <polygon
         points="50 6 83 20 96 50 83 80 50 94 17 80 4 50 17 20"
         fill="#30343a"
@@ -1532,11 +1661,11 @@ function AchievementMiniBadge({ item, featured, lang }: { item: Achievement; fea
   return (
     <article
       className={`relative grid min-h-[76px] place-items-center gap-1 overflow-hidden rounded-[18px] border px-2 py-2 text-center text-[11px] leading-tight transition hover:-translate-y-0.5 hover:shadow-sm ${tone.card} ${featured ? 'ring-1 ring-white/80' : ''}`}
-      title={`${item.description} · ${tLabel(profileField, lang)}`}
+      title={`${tDesc(item.description, lang)} · ${tLabel(profileField, lang)}`}
       data-profile-field={profileField}
     >
       {featured ? (
-        <span className={`absolute right-2 top-2 h-2 w-2 rounded-full ${tone.dot}`} aria-label="收藏" />
+        <span className={`absolute right-2 top-2 h-2 w-2 rounded-full ${tone.dot}`} aria-label={studentCopy[lang].featuredLabel} />
       ) : null}
         <span className={`relative grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-gradient-to-br ring-1 ${tone.icon}`}>
         <span className="absolute left-1.5 top-1 h-2 w-3 rounded-full bg-white/70 blur-[1px]" />
@@ -1763,7 +1892,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 10000);
     setActiveLoading(true);
-    setActiveStatus('正在发送给教练...');
+    setActiveStatus(t.sending);
 
     try {
       const response = await fetch('/api/student-submission', {
@@ -1775,7 +1904,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || '发送失败。');
+        throw new Error(payload.error || t.sendFailedGeneric);
       }
 
       if (isLesson) {
@@ -1796,7 +1925,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
     } catch (error) {
       const message =
         error instanceof DOMException && error.name === 'AbortError'
-          ? '发送超时'
+          ? t.sendTimeout
           : error instanceof Error
             ? error.message
             : t.failed;
@@ -2160,7 +2289,7 @@ export default function StudentPage() {
       const payload = (await response.json().catch(() => ({}))) as { student?: StudentData; error?: string };
 
       if (!response.ok || !payload.student) {
-        throw new Error(payload.error || '读取失败。');
+        throw new Error(payload.error || t.failed);
       }
 
       setActiveStudent(payload.student);
