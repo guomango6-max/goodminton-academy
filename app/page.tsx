@@ -545,7 +545,7 @@ export default function Home() {
               href="https://wa.me/358413134358"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden h-10 items-center rounded-[8px] bg-[#14bf96] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_-18px_rgba(20,191,150,0.8)] transition-colors hover:bg-[#10a985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96] sm:inline-flex"
+              className="press hidden h-10 items-center rounded-[8px] bg-[#14bf96] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_-18px_rgba(20,191,150,0.8)] transition-colors hover:bg-[#10a985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96] sm:inline-flex"
             >
               {t.bookTraining}
             </a>
@@ -556,13 +556,13 @@ export default function Home() {
       <main>
         <section id="student-portal" className="mx-auto grid w-full max-w-[1180px] scroll-mt-20 gap-10 px-5 pb-10 pt-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:pb-12 lg:pt-14">
           <div className="min-w-0">
-            <h1 className="max-w-[820px] text-[44px] font-medium leading-[1.05] tracking-[-0.018em] text-[#101820] sm:text-[62px]">
+            <h1 className="animate-fade-up max-w-[820px] text-[44px] font-medium leading-[1.05] tracking-[-0.018em] text-[#101820] sm:text-[62px]">
               {t.title}
             </h1>
-            <p className="cjk-wrap mt-6 max-w-[720px] text-[18px] leading-8 text-[#52636b]">
+            <p className="animate-fade-up delay-1 cjk-wrap mt-6 max-w-[720px] text-[18px] leading-8 text-[#52636b]">
               <MissionText lang={lang} />
             </p>
-            <div className="mt-7 grid max-w-[760px] gap-3 sm:grid-cols-3">
+            <div className="animate-fade-up delay-2 mt-7 grid max-w-[760px] gap-3 sm:grid-cols-3">
               {t.proofPoints.map((item) => (
                 <div key={item} className="rounded-[8px] border border-[#d8e6da] bg-white/72 px-4 py-3 text-[14px] font-semibold leading-6 text-[#1f4a38] shadow-[0_14px_32px_-28px_rgba(18,18,18,0.35)]">
                   {item}
@@ -571,8 +571,8 @@ export default function Home() {
             </div>
 
             <div className="mt-10 border-t border-[#e0dacb] pt-10">
-              <article className="grid gap-7 lg:grid-cols-[410px_minmax(0,1fr)] lg:items-center">
-                <div className="relative aspect-[16/9] overflow-hidden rounded-[8px] bg-[#b9c6a3]">
+              <article className="animate-fade-up delay-3 grid gap-7 lg:grid-cols-[410px_minmax(0,1fr)] lg:items-center">
+                <div className="hover-zoom relative aspect-[16/9] overflow-hidden rounded-[8px] bg-[#b9c6a3]">
                   <Image
                     src={featured.image}
                     alt={t.featuredAlt}
@@ -591,7 +591,7 @@ export default function Home() {
                   <p className="cjk-wrap mt-5 max-w-[520px] text-[16px] leading-8 text-[#52636b]">{featured.excerpt}</p>
                   <a
                     href="#articles"
-                    className="mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] border border-[#cfe8d9] bg-white px-4 text-[14px] font-semibold text-[#1f4a38] transition-colors hover:border-[#14bf96]"
+                    className="link-arrow press mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] border border-[#cfe8d9] bg-white px-4 text-[14px] font-semibold text-[#1f4a38] transition-colors hover:border-[#14bf96]"
                   >
                     {t.featuredReadMore}
                     <span aria-hidden="true">→</span>
@@ -645,7 +645,7 @@ export default function Home() {
                 )}
               </h2>
               <div className="mt-6 grid gap-3">
-                <Link href="/friend" className="inline-flex h-11 items-center justify-center rounded-[6px] bg-[#dff4ea] px-4 text-[14px] font-semibold text-[#1f4a38] transition-colors hover:bg-[#cbeedd]">
+                <Link href="/friend" className="press inline-flex h-11 items-center justify-center rounded-[6px] bg-[#dff4ea] px-4 text-[14px] font-semibold text-[#1f4a38] transition-colors hover:bg-[#cbeedd]">
                   {t.qaFriend}
                 </Link>
               </div>
@@ -661,7 +661,7 @@ export default function Home() {
               {articleList.map((post) => (
                 <article
                   key={post.title}
-                  className="border-t border-[#d8d0bf] pt-6"
+                  className="editorial-hover border-t border-[#d8d0bf] pt-6"
                 >
                   <p className="text-[13px] font-semibold text-[#16845f]">{post.category}</p>
                   <h3 className="cjk-wrap mt-4 text-[24px] font-semibold leading-tight tracking-[-0.01em] text-[#101820]">
@@ -669,8 +669,9 @@ export default function Home() {
                   </h3>
                   <p className="mt-3 text-[13px] font-semibold text-[#64737a]">{post.date}</p>
                   <p className="cjk-wrap mt-5 text-[16px] leading-7 text-[#52636b]">{post.excerpt}</p>
-                  <a href={post.href || '#student-portal'} className="mt-5 inline-flex text-[14px] font-semibold text-[#16845f] hover:text-[#0e5a40]">
+                  <a href={post.href || '#student-portal'} className="link-arrow mt-5 inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#16845f] hover:text-[#0e5a40]">
                     {lang === 'zh' ? '继续阅读' : t.readMore}
+                    <span aria-hidden="true">→</span>
                   </a>
                 </article>
               ))}
@@ -707,8 +708,8 @@ export default function Home() {
                   {showcaseList
                     .filter((item) => item.featured)
                     .map((item) => (
-                      <article key={item.id} className="overflow-hidden rounded-[8px] border border-[#d7dfd0] bg-white">
-                        <div className="relative aspect-[16/9] overflow-hidden bg-[#d8e8dc]">
+                      <article key={item.id} className="card-hover-light overflow-hidden rounded-[8px] border border-[#d7dfd0] bg-white">
+                        <div className="hover-zoom relative aspect-[16/9] overflow-hidden bg-[#d8e8dc]">
                           <Image
                             src={item.image}
                             alt={item.title}
@@ -732,8 +733,8 @@ export default function Home() {
                     {showcaseList
                       .filter((item) => !item.featured)
                       .map((item) => (
-                        <article key={item.id} className="overflow-hidden rounded-[8px] border border-[#d7dfd0] bg-white">
-                          <div className={`relative overflow-hidden bg-[#d8e8dc] ${portraitShowcaseIds.has(item.id) ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                        <article key={item.id} className="card-hover-light overflow-hidden rounded-[8px] border border-[#d7dfd0] bg-white">
+                          <div className={`hover-zoom relative overflow-hidden bg-[#d8e8dc] ${portraitShowcaseIds.has(item.id) ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
                             <Image
                               src={item.image}
                               alt={item.title}
@@ -785,7 +786,7 @@ export default function Home() {
 
               {coachOpen ? (
                 <div id="coach-panel" className="mt-8 grid gap-8 border-t border-[#d7dfd0] pt-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[8px] bg-[#e6e1d4]">
+                  <div className="hover-zoom relative aspect-[4/5] overflow-hidden rounded-[8px] bg-[#e6e1d4]">
                     <Image
                       src={coach.image}
                       alt={coach.name}
@@ -823,7 +824,7 @@ export default function Home() {
                       href={coach.contactHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-7 inline-flex h-11 items-center justify-center rounded-[6px] bg-[#14bf96] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#10a985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+                      className="press mt-7 inline-flex h-11 items-center justify-center rounded-[6px] bg-[#14bf96] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#10a985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
                     >
                       {t.coachContact}
                     </a>
@@ -831,7 +832,7 @@ export default function Home() {
 
                   {coach.trainingImage ? (
                     <figure className="overflow-hidden rounded-[8px] border border-[#d7dfd0] bg-[#f4f7f1] lg:col-span-2 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
-                      <div className="relative aspect-[3/2] overflow-hidden bg-[#e6e1d4]">
+                      <div className="hover-zoom relative aspect-[3/2] overflow-hidden bg-[#e6e1d4]">
                         <Image
                           src={coach.trainingImage}
                           alt={coach.trainingTitle || coach.name}

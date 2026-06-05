@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbfaf6;
+  --foreground: #21242c;
+  --brand: #14bf96;
+  --brand-strong: #10a985;
+  --brand-ink: #16845f;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -12,11 +16,8 @@
   --font-mono: var(--font-system-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -39,31 +40,6 @@ h6 {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", "Source Han Sans SC", "Noto Sans SC", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-}
-
-.fresh-grain {
-  position: relative;
-  isolation: isolate;
-}
-
-.fresh-grain::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.08;
-  background-image:
-    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.45), transparent 36%),
-    radial-gradient(circle at 80% 12%, rgba(22, 163, 74, 0.05), transparent 28%),
-    radial-gradient(circle at 74% 78%, rgba(100, 116, 139, 0.04), transparent 30%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
-  background-size: auto, auto, auto, 180px 180px;
-}
-
-.fresh-grain > * {
-  position: relative;
-  z-index: 1;
 }
 
 .hero-zh {
@@ -97,31 +73,18 @@ h6 {
   }
 }
 
+/* ===================================================================
+   Motion + polish (2026-06-05)
+   Restrained, on-brand (emerald #14bf96) — matches the editorial style.
+   =================================================================== */
+
 @keyframes fade-up {
   0% { opacity: 0; transform: translateY(14px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.35; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(1.08); }
-}
-
-@keyframes shuttle-drift {
-  0%, 100% { transform: translate(0, 0) rotate(-12deg); }
-  50% { transform: translate(6px, -8px) rotate(-8deg); }
-}
-
 .animate-fade-up {
   animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.animate-glow {
-  animation: glow-pulse 6s ease-in-out infinite;
-}
-
-.animate-drift {
-  animation: shuttle-drift 7s ease-in-out infinite;
 }
 
 .delay-1 { animation-delay: 0.08s; }
@@ -130,39 +93,70 @@ h6 {
 .delay-4 { animation-delay: 0.32s; }
 .delay-5 { animation-delay: 0.40s; }
 
-.court-lines {
-  background-image:
-    linear-gradient(to right, rgba(204, 255, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(204, 255, 0, 0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
-}
-
-.court-lines-light {
-  background-image:
-    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
-}
-
-.card-hover {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.4s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 40px -20px rgba(204, 255, 0, 0.25),
-    0 0 0 1px rgba(204, 255, 0, 0.18);
-}
-
+/* Card lift — for bordered/boxed cards (showcase, coach) */
 .card-hover-light {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.3s ease, box-shadow 0.4s ease;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s ease,
+    box-shadow 0.4s ease,
+    background-color 0.3s ease;
 }
 
 .card-hover-light:hover {
   transform: translateY(-3px);
-  border-color: rgba(4, 120, 87, 0.35);
-  box-shadow: 0 22px 44px -22px rgba(15, 23, 42, 0.25),
-    0 0 0 1px rgba(4, 120, 87, 0.15);
+  border-color: rgba(20, 191, 150, 0.4);
+  box-shadow:
+    0 22px 44px -24px rgba(16, 40, 30, 0.28),
+    0 0 0 1px rgba(20, 191, 150, 0.12);
+}
+
+/* Editorial lift — for top-border-only list items (article cards) */
+.editorial-hover {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s ease;
+}
+
+.editorial-hover:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand);
+}
+
+/* Image zoom on hover — put on the image's overflow-hidden frame */
+.hover-zoom img {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.hover-zoom:hover img {
+  transform: scale(1.04);
+}
+
+/* Arrow nudge on "read more" style links */
+.link-arrow span {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+.link-arrow:hover span {
+  transform: translateX(3px);
+}
+
+/* Tactile press for primary actions */
+.press {
+  transition: transform 0.12s ease;
+}
+
+.press:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .animate-fade-up { opacity: 1 !important; transform: none !important; }
 }
