@@ -3,7 +3,7 @@ import { LangProvider } from "./components/LangContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://goodminton-academy.vercel.app"),
+  metadataBase: new URL("https://goodminton.fi"),
   title: {
     default: "Goodminton Academy",
     template: "%s | Goodminton Academy",
