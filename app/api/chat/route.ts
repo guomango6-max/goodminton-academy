@@ -7,6 +7,55 @@ import { NextResponse } from 'next/server';
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
 
+// Lightweight abuse guards. Protects the open chat endpoint from burning
+// DeepSeek quota and spamming ntfy. In-process only (per serverless instance);
+// good enough for current traffic, swap for a shared store if it scales.
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 12;
+const MAX_TOTAL_CHARS = 8_000;
+
+const rateLimitBuckets = new Map<string, number[]>();
+
+function getClientId(req: Request) {
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.headers.get('x-real-ip') || 'unknown';
+}
+
+function isRateLimited(clientId: string) {
+  const now = Date.now();
+  const recent = (rateLimitBuckets.get(clientId) || []).filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    rateLimitBuckets.set(clientId, recent);
+    return true;
+  }
+  recent.push(now);
+  rateLimitBuckets.set(clientId, recent);
+
+  // Opportunistic cleanup so the map does not grow unbounded.
+  if (rateLimitBuckets.size > 5_000) {
+    for (const [key, stamps] of rateLimitBuckets) {
+      if (stamps.every((ts) => now - ts >= RATE_LIMIT_WINDOW_MS)) rateLimitBuckets.delete(key);
+    }
+  }
+  return false;
+}
+
+function totalMessageChars(messages: ChatRequestMessage[]) {
+  let total = 0;
+  for (const message of messages) {
+    if (typeof message.content === 'string') total += message.content.length;
+    if (Array.isArray(message.parts)) {
+      for (const part of message.parts) {
+        if (part && part.type === 'text' && typeof (part as { text?: string }).text === 'string') {
+          total += (part as { text: string }).text.length;
+        }
+      }
+    }
+  }
+  return total;
+}
+
 const deepseek = createOpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: DEEPSEEK_BASE_URL,
@@ -235,6 +284,17 @@ export async function POST(req: Request) {
 
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return NextResponse.json({ error: 'messages must be a non-empty array.' }, { status: 400 });
+  }
+
+  if (isRateLimited(getClientId(req))) {
+    return NextResponse.json(
+      { error: '请求太频繁，请稍等一会儿再试。' },
+      { status: 429, headers: { 'retry-after': '60' } },
+    );
+  }
+
+  if (totalMessageChars(body.messages) > MAX_TOTAL_CHARS) {
+    return NextResponse.json({ error: '消息内容过长，请精简后再发送。' }, { status: 413 });
   }
 
   if (!process.env.DEEPSEEK_API_KEY) {
