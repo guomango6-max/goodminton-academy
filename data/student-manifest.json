@@ -149,5 +149,13 @@
     "loginId": "zx40",
     "name": "赵昕",
     "source": "student-zhao-xin.md"
+  },
+  {
+    "studentId": "zi-xuan",
+    "file": "zi-xuan.json",
+    "alias": "zx",
+    "loginId": "zx28",
+    "name": "紫萱",
+    "source": "student-zi-xuan.md"
   }
 ]
