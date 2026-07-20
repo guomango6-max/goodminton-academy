@@ -1,0 +1,360 @@
+{
+  "studentId": "boy-16",
+  "accessCode": "16",
+  "name": "16岁男孩",
+  "level": "C1",
+  "reviewMode": "开启",
+  "progress": 35,
+  "stage": {
+    "title": "C1 青少年基线复查",
+    "description": "16岁男孩，身体素质和兴趣不错，基本功也可以；先确认高远/网前/发接发质量和击球后还原。",
+    "path": [
+      {
+        "label": "基线",
+        "active": true
+      },
+      {
+        "label": "技术质量",
+        "active": true
+      },
+      {
+        "label": "移动还原",
+        "active": false
+      },
+      {
+        "label": "实战衔接",
+        "active": false
+      }
+    ],
+    "pathProgress": 35
+  },
+  "today": {
+    "title": "C1 基线复查",
+    "description": "复查高远、网前、发接发和移动还原；确认身体素质如何转化为稳定技术质量。"
+  },
+  "activity": [
+    {
+      "label": "训练记录",
+      "value": "0",
+      "note": "待同步"
+    },
+    {
+      "label": "当前重点",
+      "value": "2",
+      "note": "基线复查"
+    },
+    {
+      "label": "家庭作业",
+      "value": "0/3",
+      "note": "待布置"
+    },
+    {
+      "label": "档案来源",
+      "value": "OB",
+      "note": "student-boy-16.md"
+    }
+  ],
+  "tags": [
+    "青少年",
+    "C1",
+    "基线复查",
+    "Obsidian"
+  ],
+  "reviewQueue": [
+    {
+      "title": "C1 技术质量基线",
+      "source": "student-boy-16.md",
+      "status": "本阶段重点",
+      "detail": "基本功可以，需验证高远、网前、发接发的稳定性。"
+    },
+    {
+      "title": "移动还原与连续性",
+      "source": "student-boy-16.md",
+      "status": "待验证",
+      "detail": "身体素质不错，重点看是否能高效移动并击球后回 ready。"
+    },
+    {
+      "title": "训练日志回流",
+      "source": "student-page",
+      "status": "待同步",
+      "detail": "课后总结可通过网站提交，再回写到 Obsidian。"
+    }
+  ],
+  "knowledgeLinks": [
+    {
+      "from": "Obsidian 学员档案",
+      "to": "网站学员页",
+      "weight": "强"
+    },
+    {
+      "from": "C1 基线复查",
+      "to": "当前训练重点",
+      "weight": "强"
+    },
+    {
+      "from": "课后总结",
+      "to": "下一次训练验证",
+      "weight": "中"
+    }
+  ],
+  "recentFeedback": [
+    "16岁男孩，C1；身体素质和兴趣都不错，基本功也可以。",
+    "先确认技术质量和移动还原，不急着上复杂战术。",
+    "真实姓名/昵称待补，当前使用 boy16 占位登录。"
+  ],
+  "lessonSummary": {
+    "date": "2026-07-20",
+    "title": "C1 青少年基线复查",
+    "studentReflection": "",
+    "coachNote": "新建占位档案：先复查高远/网前/发接发/移动还原，再确定训练重点。",
+    "homework": [
+      {
+        "id": "hw-ready-return",
+        "text": "基线课后再布置：击球后回 ready 练习。",
+        "done": false
+      },
+      {
+        "id": "hw-clear-quality",
+        "text": "基线课后再布置：高远/轻高远质量练习。",
+        "done": false
+      },
+      {
+        "id": "hw-feedback-note",
+        "text": "课后写一句：今天最卡的是哪一类球？",
+        "done": false
+      }
+    ]
+  },
+  "matchReview": {
+    "match": "",
+    "score": "",
+    "whatWorked": "",
+    "nextAdjustment": "先完成 C1 基线复查，再决定比赛/战术复盘主线。",
+    "experience": ""
+  },
+  "abilityMatrix": [
+    {
+      "label": "身体",
+      "value": 5
+    },
+    {
+      "label": "心理",
+      "value": 4
+    },
+    {
+      "label": "态度",
+      "value": 5
+    },
+    {
+      "label": "技术",
+      "value": 4
+    },
+    {
+      "label": "战术",
+      "value": 3
+    },
+    {
+      "label": "步法",
+      "value": 4
+    }
+  ],
+  "lessonHistory": [
+    {
+      "id": "lesson-profile-boy-16-2026-07-20",
+      "date": "2026-07-20",
+      "title": "学员建档：C1 青少年基线复查",
+      "mainContent": [
+        "C1青少年建档",
+        "技术质量基线",
+        "移动还原确认"
+      ],
+      "coachNote": "身体素质和兴趣不错，基本功可以；下次课确认真实技术质量。",
+      "studentNote": "等待学生课后反馈。",
+      "homeworkDone": 0,
+      "homeworkTotal": 3
+    }
+  ],
+  "growthPath": [],
+  "lastUpdated": "2026-07-20",
+  "i18n": {
+    "en": {
+      "studentId": "boy-16",
+      "accessCode": "16",
+      "name": "16-year-old boy",
+      "level": "C1",
+      "reviewMode": "On",
+      "progress": 35,
+      "stage": {
+        "title": "C1 Youth Baseline Check",
+        "description": "Good physical qualities and interest; check technical quality and recovery first.",
+        "path": [
+          {
+            "label": "Baseline",
+            "active": true
+          },
+          {
+            "label": "Technique",
+            "active": true
+          },
+          {
+            "label": "Recovery",
+            "active": false
+          },
+          {
+            "label": "Match Link",
+            "active": false
+          }
+        ],
+        "pathProgress": 35
+      },
+      "today": {
+        "title": "C1 Baseline Check",
+        "description": "Check clears, net play, serve/receive, and recovery."
+      },
+      "activity": [
+        {
+          "label": "Training Records",
+          "value": "0",
+          "note": "To Sync"
+        },
+        {
+          "label": "Current Focus",
+          "value": "2",
+          "note": "Initial Check阶段"
+        },
+        {
+          "label": "Homework",
+          "value": "0/3",
+          "note": "待布置"
+        },
+        {
+          "label": "档案来源",
+          "value": "OB",
+          "note": "student-zhao-xin.md"
+        }
+      ],
+      "tags": [
+        "Adult",
+        "C1",
+        "Profile Setup",
+        "Obsidian"
+      ],
+      "reviewQueue": [
+        {
+          "title": "Basic Ability Check",
+          "source": "student-zhao-xin.md",
+          "status": "Current Stage Focus",
+          "detail": "Build the ability matrix and class feedback loop first, then calibrate it with real training records."
+        },
+        {
+          "title": "Movement Stability",
+          "source": "student-zhao-xin.md",
+          "status": "To Verify",
+          "detail": "Next lesson will add measurable records and training feedback."
+        },
+        {
+          "title": "训练日志回流",
+          "source": "student-page",
+          "status": "To Sync",
+          "detail": "Lesson summaries and match reviews can be submitted through the website first, then written back to Obsidian."
+        }
+      ],
+      "knowledgeLinks": [
+        {
+          "from": "Obsidian 学员档案",
+          "to": "网站学员页",
+          "weight": "Strong"
+        },
+        {
+          "from": "课后总结",
+          "to": "当前训练重点",
+          "weight": "Medium"
+        },
+        {
+          "from": "比赛复盘",
+          "to": "下一次训练验证",
+          "weight": "New"
+        }
+      ],
+      "recentFeedback": [
+        "16-year-old boy, C1; good physical qualities, interest, and basic skills.",
+        "Check technical quality and recovery before complex tactics.",
+        "Real name/nickname pending; boy16 is a placeholder login."
+      ],
+      "lessonSummary": {
+        "date": "2026-05-19",
+        "title": "Initial Profile Setup",
+        "studentReflection": "",
+        "coachNote": "Generated the website profile from the Obsidian student profile; future lesson records will keep it calibrated.",
+        "homework": [
+          {
+            "id": "hw-swing",
+            "text": "挥拍: 空拍慢挥 10 次, 关注拍面和发力顺序｜近期目标: 建立Basic Ability Check, 确认 1-2 个最高优先训练重点｜成长路径: training-path-footwork-foundation / training-path-net-control",
+            "done": false
+          },
+          {
+            "id": "hw-footwork",
+            "text": "Footwork: 无球启动/回位 6 组, 重点看第一步和还原｜近期目标: 建立Basic Ability Check, 确认 1-2 个最高优先训练重点｜成长路径: training-path-footwork-foundation / training-path-net-control",
+            "done": false
+          },
+          {
+            "id": "hw-fitness",
+            "text": "体能: 核心或下肢稳定 3 组, 动作质量优先｜近期目标: 建立Basic Ability Check, 确认 1-2 个最高优先训练重点｜成长路径: training-path-footwork-foundation / training-path-net-control",
+            "done": false
+          }
+        ]
+      },
+      "matchReview": {
+        "match": "",
+        "score": "",
+        "whatWorked": "",
+        "nextAdjustment": "Complete the basic ability check first, then choose the main match-review focus.",
+        "experience": ""
+      },
+      "abilityMatrix": [
+        {
+          "label": "Physical",
+          "value": 5
+        },
+        {
+          "label": "Mental",
+          "value": 4
+        },
+        {
+          "label": "Attitude",
+          "value": 4
+        },
+        {
+          "label": "Technique",
+          "value": 4
+        },
+        {
+          "label": "Tactics",
+          "value": 3
+        },
+        {
+          "label": "Footwork",
+          "value": 4
+        }
+      ],
+      "lessonHistory": [
+        {
+          "id": "lesson-profile-sync",
+          "date": "2026-05-30",
+          "title": "Initial Profile Setup",
+          "mainContent": [
+            "Basic Ability Check",
+            "Training Focus Setup",
+            "Feedback System Connected"
+          ],
+          "coachNote": "Create the website student page first, then calibrate the ability matrix and skill level from lesson performance.",
+          "studentNote": "Waiting for student post-lesson feedback.",
+          "homeworkDone": 0,
+          "homeworkTotal": 3
+        }
+      ],
+      "growthPath": [],
+      "lastUpdated": "2026-05-19"
+    }
+  }
+}
