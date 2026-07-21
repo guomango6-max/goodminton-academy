@@ -1,9 +1,9 @@
 [
   {"studentId": "abih", "file": "abih.json", "alias": "abih", "loginId": "abih30", "name": "Abih", "source": "student-abih.md"},
   {"studentId": "abih-wife", "file": "abih-wife.json", "alias": "abiw", "loginId": "abiw30", "name": "Abih妻子_姓名待确认", "source": "student-abih-wife.md"},
-  {"studentId": "boy-16", "file": "boy-16.json", "alias": "boy16", "loginId": "boy16", "name": "16岁男孩", "source": "student-boy-16.md"},
   {"studentId": "cui-yunhao", "file": "cui-yunhao.json", "alias": "cyh", "loginId": "cyh33", "name": "崔云颢", "source": "student-cui-yunhao.md"},
   {"studentId": "demo", "file": "demo.json", "alias": "demo", "loginId": "demo", "name": "示例学员"},
+  {"studentId": "eric", "file": "eric.json", "alias": "eric16", "loginId": "eric16", "name": "Eric", "source": "student-eric.md"},
   {"studentId": "fulishou", "file": "fulishou.json", "alias": "fls", "loginId": "fls01", "name": "芙力兽", "source": "student-fulishou.md"},
   {"studentId": "guo-renhua", "file": "guo-renhua.json", "alias": "grh", "loginId": "grh46", "name": "郭仁花", "source": "student-guo-renhua.md"},
   {"studentId": "guo-yiwei", "file": "guo-yiwei.json", "alias": "gyw", "loginId": "gyw11", "name": "郭一苇", "source": "student-guo-yiwei.md"},

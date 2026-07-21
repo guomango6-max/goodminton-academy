@@ -1,7 +1,7 @@
 {
-  "studentId": "boy-16",
+  "studentId": "eric",
   "accessCode": "16",
-  "name": "16岁男孩",
+  "name": "Eric",
   "level": "C1",
   "reviewMode": "开启",
   "progress": 35,
@@ -51,7 +51,7 @@
     {
       "label": "档案来源",
       "value": "OB",
-      "note": "student-boy-16.md"
+      "note": "student-eric.md"
     }
   ],
   "tags": [
@@ -63,13 +63,13 @@
   "reviewQueue": [
     {
       "title": "C1 技术质量基线",
-      "source": "student-boy-16.md",
+      "source": "student-eric.md",
       "status": "本阶段重点",
       "detail": "基本功可以，需验证高远、网前、发接发的稳定性。"
     },
     {
       "title": "移动还原与连续性",
-      "source": "student-boy-16.md",
+      "source": "student-eric.md",
       "status": "待验证",
       "detail": "身体素质不错，重点看是否能高效移动并击球后回 ready。"
     },
@@ -98,9 +98,9 @@
     }
   ],
   "recentFeedback": [
-    "16岁男孩，C1；身体素质和兴趣都不错，基本功也可以。",
+    "Eric, 16岁, 男, C1；身体素质和兴趣不错，基本功也可以。",
     "先确认技术质量和移动还原，不急着上复杂战术。",
-    "真实姓名/昵称待补，当前使用 boy16 占位登录。"
+    "原名 16岁男孩 占位，已确认为 Eric；登录 ID：eric16。"
   ],
   "lessonSummary": {
     "date": "2026-07-20",
@@ -178,9 +178,9 @@
   "lastUpdated": "2026-07-20",
   "i18n": {
     "en": {
-      "studentId": "boy-16",
+      "studentId": "eric",
       "accessCode": "16",
-      "name": "16-year-old boy",
+      "name": "Eric",
       "level": "C1",
       "reviewMode": "On",
       "progress": 35,
@@ -277,7 +277,7 @@
         }
       ],
       "recentFeedback": [
-        "16-year-old boy, C1; good physical qualities, interest, and basic skills.",
+        "Eric, 16, male, C1; good physical qualities, interest, and basic skills.",
         "Check technical quality and recovery before complex tactics.",
         "Real name/nickname pending; boy16 is a placeholder login."
       ],
