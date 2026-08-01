@@ -256,6 +256,16 @@ const studentCopy = {
     sendTimeout: '发送超时',
     rankBadgeLabel: '等级徽章',
     featuredLabel: '收藏',
+    messages: '教练消息',
+    messagesDescription: '教练和你之间的消息。有问题也可以直接在这里问。',
+    messagesEmpty: '还没有消息。',
+    messagesFromCoach: '教练',
+    messagesFromMe: '我',
+    messagesPlaceholder: '回复教练…',
+    messagesSend: '发送',
+    messagesSending: '发送中…',
+    messagesFailed: '发送失败，请稍后再试。',
+    messagesLoading: '加载中…',
     peerWall: '其他学员',
     peerWallDescription: '由教练精选展示，不显示真实姓名。',
     peerWallEmpty: '还没有教练精选的内容。',
@@ -364,6 +374,16 @@ const studentCopy = {
     sendTimeout: 'Send timed out',
     rankBadgeLabel: 'rank badge',
     featuredLabel: 'Featured',
+    messages: 'Coach Messages',
+    messagesDescription: 'Messages between you and your coach. Ask anything here.',
+    messagesEmpty: 'No messages yet.',
+    messagesFromCoach: 'Coach',
+    messagesFromMe: 'Me',
+    messagesPlaceholder: 'Reply to your coach…',
+    messagesSend: 'Send',
+    messagesSending: 'Sending…',
+    messagesFailed: 'Send failed. Please try again later.',
+    messagesLoading: 'Loading…',
     peerWall: 'Peers',
     peerWallDescription: 'Curated by the coach. Real names are never shown.',
     peerWallEmpty: 'Nothing featured by the coach yet.',
@@ -1957,6 +1977,135 @@ function readPeerWallReadIds(readKey: string) {
   }
 }
 
+type CoachMessage = {
+  id: string;
+  from: 'coach' | 'student';
+  body: string;
+  createdAt: string;
+};
+
+// Coach ↔ student thread. Credential comes from sessionStorage, same as the
+// history block — the server resolves it to a studentId, so a student can only
+// ever read or write their own thread.
+function MessageThread({ studentId, lang }: { studentId: string; lang: Lang }) {
+  const t = studentCopy[lang];
+  const [messages, setMessages] = useState<CoachMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const exchange = useCallback(
+    async (payload: Record<string, unknown>) => {
+      const credential = window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY);
+      if (!credential) return null;
+      const response = await fetch('/api/student-messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ credential, ...payload }),
+      });
+      if (!response.ok) throw new Error('request failed');
+      return (await response.json()) as { messages?: CoachMessage[] };
+    },
+    [],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Opening the section counts as reading it.
+        const data = await exchange({ markRead: true });
+        if (!cancelled && data) setMessages(data.messages || []);
+      } catch {
+        // Leave the empty state in place; a failed read is not worth an alarm.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [exchange, studentId]);
+
+  async function handleSend(event: React.FormEvent) {
+    event.preventDefault();
+    const body = draft.trim();
+    if (!body || sending) return;
+    setSending(true);
+    setFailed(false);
+    try {
+      const data = await exchange({ body });
+      setMessages(data?.messages || []);
+      setDraft('');
+    } catch {
+      setFailed(true);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-slate-500">{t.messagesDescription}</p>
+
+      {loading ? (
+        <p className="text-sm text-slate-500">{t.messagesLoading}</p>
+      ) : messages.length === 0 ? (
+        <p className="text-sm text-slate-500">{t.messagesEmpty}</p>
+      ) : (
+        <ul className="space-y-2">
+          {messages.map((message) => {
+            const fromCoach = message.from === 'coach';
+            return (
+              <li
+                key={message.id}
+                className={`rounded-lg border px-3 py-2 text-sm ${
+                  fromCoach
+                    ? 'border-[#cfe3d4] bg-[#f4f8f1] text-slate-800'
+                    : 'border-[#e2ded2] bg-white text-slate-700'
+                }`}
+              >
+                <div className="mb-1 flex items-baseline justify-between gap-2">
+                  <span className="text-xs font-semibold text-[#16845f]">
+                    {fromCoach ? t.messagesFromCoach : t.messagesFromMe}
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    {new Date(message.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="whitespace-pre-wrap break-words">{message.body}</p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <form onSubmit={handleSend} className="space-y-2">
+        <textarea
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder={t.messagesPlaceholder}
+          rows={3}
+          maxLength={2000}
+          className="w-full rounded-lg border border-[#dfe7dc] bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#9fb7a7]"
+        />
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={sending || !draft.trim()}
+            className="press rounded-[8px] border border-[#d8d0bf] bg-white px-3 py-1.5 text-sm font-semibold text-[#40525b] transition-colors hover:border-[#9fb7a7] disabled:opacity-50"
+          >
+            {sending ? t.messagesSending : t.messagesSend}
+          </button>
+          {failed ? <span className="text-xs text-red-600">{t.messagesFailed}</span> : null}
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function PeerWall({
   items,
   loading,
@@ -2583,6 +2732,10 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
               <SkillTree lang={lang} />
             </Section>
           ) : null}
+
+          <Section title={t.messages}>
+            <MessageThread key={displayStudent.studentId} studentId={displayStudent.studentId} lang={lang} />
+          </Section>
 
           <Section title={t.peerWall}>
             <PeerWall
