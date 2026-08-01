@@ -29,6 +29,8 @@ type FeaturePayload = {
   angle?: string;
   category?: string;
   tier?: string;
+  // Opt-in: also publish the coach's private written reply on the wall.
+  includeFeedback?: boolean;
 };
 
 export async function POST(req: Request) {
@@ -64,6 +66,12 @@ export async function POST(req: Request) {
 
   const tier = cleanText(body.tier).slice(0, 8); // 'C2', 'B1', 'A2', etc — short.
 
+  // Opt-in, per row, and deliberately not the default. coach_feedback is
+  // written TO one student and routinely names injuries, doubts, and history.
+  // Featuring a submission publishes the student's words; this flag is the
+  // separate act of also publishing the coach's private reply to them.
+  const includeFeedback = body.includeFeedback === true;
+
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 503 });
@@ -77,6 +85,7 @@ export async function POST(req: Request) {
       featured_angle: angle,
       featured_category: category,
       featured_tier: tier || null,
+      featured_include_feedback: includeFeedback,
     })
     .eq('external_id', recordId)
     .select('external_id')

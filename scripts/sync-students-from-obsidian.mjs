@@ -1,5 +1,6 @@
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { basename, join } from 'node:path';
 
 const DEFAULT_OBSIDIAN_STUDENT_DIR = 'D:\\ob\\work\\05-students';
@@ -11,6 +12,7 @@ const MANIFEST_FILE = join(process.cwd(), 'data', 'student-manifest.json');
 const args = new Set(process.argv.slice(2));
 const shouldUpload = args.has('--upload');
 const shouldDryRun = args.has('--dry-run');
+const shouldBackfillHistory = !args.has('--no-backfill');
 const obsidianStudentDir = process.env.GOODMINTON_OBSIDIAN_STUDENT_DIR || DEFAULT_OBSIDIAN_STUDENT_DIR;
 const obsidianHomeworkDir = process.env.GOODMINTON_OBSIDIAN_HOMEWORK_DIR || DEFAULT_OBSIDIAN_HOMEWORK_DIR;
 
@@ -27,12 +29,23 @@ const loginOverrides = {
   'guo-renhua': 'grh46',
   'cui-yunhao': 'cyh33',
   'wang-meng': 'wm45',
+  'wang-han': 'wh07',
   'zhang-biqiong': 'zbq48',
   'zhang-cuiqi': 'zcq40',
+  'zhao-chen': 'zc09',
   'zhao-xin': 'zx40',
+  'zi-xuan': 'zx28',
   'jin-yan': 'jy47',
   'lu-shiqiong': 'lsq40',
   xiaokonglong: 'xkl13',
+  // 2026-07-31 新增。aami/amyra 均 8 岁且 studentId 为单词，
+  // fallbackLoginId 只取首字母会让两人都得到 a08（凭证冲突），必须 override。
+  aami: 'aami08',
+  amyra: 'amyra08',
+  doudou: 'dd11',
+  // 对齐库内既有记录（fallback 会生成 y09，与 vault/凭证表的 yy09 不一致）
+  yaoyao: 'yy09',
+  mengmeng: 'mm13',
 };
 
 const legacyCredentials = {
@@ -68,6 +81,8 @@ const legacyCredentials = {
   yangjingnan4837: 'yang-jingnan',
   '杨静南48': 'yang-jingnan',
   '杨静南4837': 'yang-jingnan',
+  zixuan28: 'zi-xuan',
+  '紫萱28': 'zi-xuan',
 };
 
 function normalizeLoginCredential(value) {
@@ -675,6 +690,7 @@ async function collectStudents() {
   const students = [];
 
   for (const fileName of files.sort()) {
+    if (!fileName.endsWith('.md')) continue;
     const fullPath = join(obsidianStudentDir, fileName);
     const raw = await readFile(fullPath, 'utf8');
     const frontmatter = parseFrontmatter(raw);
@@ -714,6 +730,12 @@ async function collectStudents() {
       level,
       loginId,
       alias: loginId.replace(/\d+$/u, ''),
+      // Who actually holds the login. Coach policy (2026-08-01): minors are
+      // not given accounts — the parent is. Anything that addresses a student
+      // directly (coach messages in particular) must read this first, because
+      // on a 'parent' thread the reader is the guardian and the student is the
+      // subject, not the audience.
+      accountHolder: group === '青少年' ? 'parent' : 'student',
       focusItems,
       recentGoal,
       growthPath,
@@ -763,6 +785,21 @@ async function uploadStudents(manifest) {
   return payload;
 }
 
+function backfillStudentHistory() {
+  const result = spawnSync(process.execPath, ['scripts/backfill-student-history-to-supabase.mjs'], {
+    cwd: process.cwd(),
+    stdio: 'inherit',
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    process.exit(result.status || 1);
+  }
+}
+
 const students = await collectStudents();
 const loginCredentials = { demo: 'demo', ...legacyCredentials };
 const manifest = [
@@ -789,6 +826,7 @@ for (const item of students) {
     alias: item.alias,
     loginId: item.loginId,
     name: item.name,
+    accountHolder: item.accountHolder,
     source: item.sourceFile,
   });
 
@@ -815,4 +853,12 @@ for (const item of orderedManifest) {
 if (shouldUpload && !shouldDryRun) {
   const payload = await uploadStudents(orderedManifest);
   console.log('Uploaded students:', payload);
+}
+
+if (shouldBackfillHistory && !shouldDryRun) {
+  backfillStudentHistory();
+} else if (shouldDryRun) {
+  console.log('Skipped Supabase history backfill because this is a dry run.');
+} else {
+  console.log('Skipped Supabase history backfill because --no-backfill was provided.');
 }

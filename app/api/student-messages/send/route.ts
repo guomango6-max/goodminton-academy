@@ -9,6 +9,7 @@
 // unanswered messages.
 
 import { NextResponse } from 'next/server';
+import { getStudentEntry } from '@/lib/student-directory';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 const NO_STORE_HEADERS = {
@@ -101,13 +102,26 @@ export async function GET(req: Request) {
 
   const threads = new Map<
     string,
-    { studentId: string; lastMessage: string; lastFrom: 'coach' | 'student'; lastAt: string; awaitingCoachReply: boolean }
+    {
+      studentId: string;
+      name: string;
+      // 'parent' means the person reading this thread is the guardian and the
+      // student is the subject — write accordingly.
+      accountHolder: 'parent' | 'student';
+      lastMessage: string;
+      lastFrom: 'coach' | 'student';
+      lastAt: string;
+      awaitingCoachReply: boolean;
+    }
   >();
 
   for (const row of (data || []) as Row[]) {
     if (!threads.has(row.student_id)) {
+      const entry = getStudentEntry(row.student_id);
       threads.set(row.student_id, {
         studentId: row.student_id,
+        name: entry?.name || row.student_id,
+        accountHolder: entry?.accountHolder || 'student',
         lastMessage: row.body,
         lastFrom: row.direction === 'coach_to_student' ? 'coach' : 'student',
         lastAt: row.created_at,

@@ -24,6 +24,8 @@ type HistoryRow = {
   featured_angle: string | null;
   featured_category: string | null;
   featured_tier: string | null;
+  featured_include_feedback: boolean | null;
+  coach_feedback: string | null;
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -83,6 +85,10 @@ function rowToFeedItem(row: HistoryRow): PeerFeedItem | null {
     return null;
   }
 
+  // Private by default. The coach's written reply only travels to the wall
+  // when this row was explicitly opted in.
+  const coachFeedback = row.featured_include_feedback ? str(row.coach_feedback) : '';
+
   return {
     id: row.external_id,
     featuredAt: row.featured_at || new Date().toISOString(),
@@ -92,6 +98,7 @@ function rowToFeedItem(row: HistoryRow): PeerFeedItem | null {
     submissionType,
     happenedAt: row.happened_at,
     excerpt,
+    ...(coachFeedback ? { coachFeedback } : {}),
   };
 }
 
@@ -114,7 +121,7 @@ export async function GET(req: Request) {
   const { data, error } = await supabase
     .from('student_history_records')
     .select(
-      'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier',
+      'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier, featured_include_feedback, coach_feedback',
     )
     .eq('featured', true)
     .order('featured_at', { ascending: false, nullsFirst: false })

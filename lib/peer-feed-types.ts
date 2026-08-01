@@ -32,6 +32,11 @@ export type PeerFeedItem = {
   tier: string;                              // 'C2' / 'B1' / 'A2' / ''
   submissionType: PeerFeedSubmissionType;
   happenedAt: string | null;                 // date of the lesson / match
+  // The coach's written reply to this student, present only when the coach
+  // opted this row in via featured_include_feedback. It is private by default:
+  // coach_feedback is addressed to one person and routinely names injuries,
+  // doubts, and history that do not belong on a shared wall.
+  coachFeedback?: string;
   excerpt: {
     // For lesson summaries
     title?: string;

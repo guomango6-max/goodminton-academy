@@ -77,6 +77,7 @@ const copy = {
     demoNote: '示例数据（演示）——正式内容由教练每周精选后发布。',
     optOutNote: '内容经教练精选并匿名化展示。如不希望自己的总结出现在这里，告诉教练即可。',
     coachAngle: '教练导读',
+    coachFeedback: '教练点评',
     anonStudent: (tier: string) => (tier ? `${tier} 学员` : '学员'),
     typeLesson: '课后总结',
     typeMatch: '比赛复盘',
@@ -107,6 +108,7 @@ const copy = {
     demoNote: 'Demo data — real highlights are published weekly by the coach.',
     optOutNote: 'Content is coach-curated and anonymized. If you prefer your notes stay private, just tell the coach.',
     coachAngle: 'Coach note',
+    coachFeedback: 'Coach feedback',
     anonStudent: (tier: string) => (tier ? `${tier} Student` : 'A student'),
     typeLesson: 'Lesson summary',
     typeMatch: 'Match review',
@@ -329,6 +331,17 @@ function HighlightCard({ item, lang, comments }: { item: PeerFeedItem; lang: Lan
         >
           {expanded ? t.collapse : t.expand}
         </button>
+      ) : null}
+
+      {/* Present only when the coach opted this row in — see
+          featured_include_feedback. Private by default. */}
+      {item.coachFeedback ? (
+        <div className="mt-3 rounded-md border border-[#cfe3d4] bg-[#f9fdf9] px-3 py-2">
+          <div className="text-xs font-semibold text-[#0e6f4d]">{t.coachFeedback}</div>
+          <div className="cjk-wrap mt-1 whitespace-pre-wrap text-sm leading-6 text-[#21242c]">
+            {item.coachFeedback}
+          </div>
+        </div>
       ) : null}
 
       <CommentSection postId={item.id} comments={comments} lang={lang} />
