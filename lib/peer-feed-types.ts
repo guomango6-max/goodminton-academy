@@ -32,10 +32,11 @@ export type PeerFeedItem = {
   tier: string;                              // 'C2' / 'B1' / 'A2' / ''
   submissionType: PeerFeedSubmissionType;
   happenedAt: string | null;                 // date of the lesson / match
-  // The coach's written reply to this student, present only when the coach
-  // opted this row in via featured_include_feedback. It is private by default:
-  // coach_feedback is addressed to one person and routinely names injuries,
-  // doubts, and history that do not belong on a shared wall.
+  // The coach's written reply. 点评 is a PUBLIC channel by design
+  // (2026-08-01): it is written knowing the whole roster reads it, and it
+  // shows on the wall whenever the row is featured. Anything meant for one
+  // person — injuries, doubts, anything about a specific body or life — goes
+  // to the private thread in /api/student-messages instead.
   coachFeedback?: string;
   excerpt: {
     // For lesson summaries

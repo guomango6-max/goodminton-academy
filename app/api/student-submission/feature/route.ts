@@ -29,9 +29,36 @@ type FeaturePayload = {
   angle?: string;
   category?: string;
   tier?: string;
-  // Opt-in: also publish the coach's private written reply on the wall.
-  includeFeedback?: boolean;
 };
+
+// Coach-wide list of recent submissions with their featured state, so the
+// coach page can pick what to put on the wall. Token-gated: this is the one
+// view that pairs a student_id with their submission text.
+export async function GET(req: Request) {
+  if (!isCoachAuthorized(getCoachToken(req, null))) {
+    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  }
+
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return NextResponse.json({ submissions: [] });
+  }
+
+  const { data, error } = await supabase
+    .from('student_history_records')
+    .select(
+      'external_id, student_id, record_type, title, happened_at, created_at, featured, featured_angle, featured_category, featured_tier, coach_feedback',
+    )
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error('[peer-wall-list-error]', error);
+    return NextResponse.json({ error: 'Failed to load submissions.' }, { status: 502 });
+  }
+
+  return NextResponse.json({ submissions: data || [] });
+}
 
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as FeaturePayload | null;
@@ -66,12 +93,6 @@ export async function POST(req: Request) {
 
   const tier = cleanText(body.tier).slice(0, 8); // 'C2', 'B1', 'A2', etc — short.
 
-  // Opt-in, per row, and deliberately not the default. coach_feedback is
-  // written TO one student and routinely names injuries, doubts, and history.
-  // Featuring a submission publishes the student's words; this flag is the
-  // separate act of also publishing the coach's private reply to them.
-  const includeFeedback = body.includeFeedback === true;
-
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 503 });
@@ -85,7 +106,6 @@ export async function POST(req: Request) {
       featured_angle: angle,
       featured_category: category,
       featured_tier: tier || null,
-      featured_include_feedback: includeFeedback,
     })
     .eq('external_id', recordId)
     .select('external_id')
