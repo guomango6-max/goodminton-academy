@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Lang, useLang } from '../components/LangContext';
+import type { PeerFeedItem } from '../../lib/peer-feed-types';
 
 type StudentPathItem = {
   label: string;
@@ -178,9 +179,9 @@ const studentCopy = {
     lessonSummary: '课后总结',
     lessonReflection: '我今天学到了什么 / 卡在哪里',
     lessonReflectionPlaceholder: '用自己的话写，不用写漂亮。',
-    learningInterest: '最近想学习的内容',
-    learningInterestPlaceholder: '例如：我想练反手高远球、接杀防守、双打轮转。',
-    confidence: '我对这个重点的把握',
+    learningInterest: '我还有什么问题 / 下次想练什么',
+    learningInterestPlaceholder: '例如：封网时身体冲出去收不回来；接杀左右两侧衔接慢；下次想练防转攻。',
+    confidence: '我对本次重点的把握程度',
     coachObservation: '教练观察',
     submitLessonTitle: '提交课后总结',
     submitLessonDesc: '只发送本栏总结、问题、掌握度和作业完成状态。',
@@ -255,6 +256,23 @@ const studentCopy = {
     sendTimeout: '发送超时',
     rankBadgeLabel: '等级徽章',
     featuredLabel: '收藏',
+    peerWall: '其他学员',
+    peerWallDescription: '由教练精选展示，不显示真实姓名。',
+    peerWallEmpty: '还没有教练精选的内容。',
+    peerWallCoachAngle: '教练导读',
+    peerWallAnonStudent: (tier: string) => (tier ? `${tier} 学员` : '学员'),
+    peerWallExpand: '展开完整',
+    peerWallCollapse: '收起',
+    peerWallMarkRead: '我已读',
+    peerWallMarkedRead: '已读 ✓',
+    peerWallCategory: {
+      correction: '纠错点',
+      drill_seed: 'Drill 种子',
+      honest_stuck: '诚实的卡点',
+      good_question: '好问题',
+    } as Record<string, string>,
+    peerWallTypeLesson: '课后总结',
+    peerWallTypeMatch: '比赛复盘',
   },
   en: {
     portal: 'Student Map',
@@ -269,9 +287,9 @@ const studentCopy = {
     lessonSummary: 'Lesson Summary',
     lessonReflection: 'What I learned today / where I got stuck',
     lessonReflectionPlaceholder: 'Write it in your own words. It does not need to be polished.',
-    learningInterest: 'What I want to learn next',
-    learningInterestPlaceholder: 'Example: backhand clears, smash defense, doubles rotation.',
-    confidence: 'My confidence with this focus',
+    learningInterest: 'Questions / what I want to train next',
+    learningInterestPlaceholder: 'Example: I rush forward after net kills and cannot recover; next time I want to train the next shot after defending.',
+    confidence: 'My confidence with today’s focus',
     coachObservation: 'Coach Observation',
     submitLessonTitle: 'Submit Lesson Summary',
     submitLessonDesc: 'Only this summary, question, confidence score, and homework status will be sent.',
@@ -346,6 +364,23 @@ const studentCopy = {
     sendTimeout: 'Send timed out',
     rankBadgeLabel: 'rank badge',
     featuredLabel: 'Featured',
+    peerWall: 'Peers',
+    peerWallDescription: 'Curated by the coach. Real names are never shown.',
+    peerWallEmpty: 'Nothing featured by the coach yet.',
+    peerWallCoachAngle: 'Coach note',
+    peerWallAnonStudent: (tier: string) => (tier ? `${tier} Student` : 'A Student'),
+    peerWallExpand: 'Show full',
+    peerWallCollapse: 'Collapse',
+    peerWallMarkRead: 'Mark as read',
+    peerWallMarkedRead: 'Read ✓',
+    peerWallCategory: {
+      correction: 'Correction',
+      drill_seed: 'Drill seed',
+      honest_stuck: 'Honest stuck point',
+      good_question: 'Good question',
+    } as Record<string, string>,
+    peerWallTypeLesson: 'Lesson summary',
+    peerWallTypeMatch: 'Match review',
   },
 } as const;
 
@@ -728,10 +763,17 @@ function DetailLine({ label, value }: { label: string; value?: string | number |
 function ConfidencePicker({
   value,
   onChange,
+  lang,
 }: {
   value: string;
   onChange: (value: string) => void;
+  lang: Lang;
 }) {
+  const labels =
+    lang === 'en'
+      ? ['Not sure', 'Know it, miss it', 'Slow drill ok', 'Stable in drill', 'Can use in game']
+      : ['不知道做法', '知道但做不到', '慢速能做到', '训练中稳定', '比赛中能用'];
+
   return (
     <div className="mt-2 grid grid-cols-5 gap-1.5">
       {[1, 2, 3, 4, 5].map((score) => {
@@ -742,13 +784,14 @@ function ConfidencePicker({
             type="button"
             onClick={() => onChange(String(score))}
             className={
-              'min-h-11 rounded-md border px-2 text-sm font-semibold transition ' +
+              'min-h-14 rounded-md border px-1.5 py-1 text-center text-xs font-semibold leading-4 transition sm:min-h-12 ' +
               (active
                 ? 'border-[#16845f] bg-[#16845f] text-white'
                 : 'border-[#cfe8d9] bg-white text-[#0e6f4d]')
             }
           >
-            {score}
+            <span className="block text-sm">{score}</span>
+            <span className="block font-medium">{labels[score - 1]}</span>
           </button>
         );
       })}
@@ -1718,10 +1761,273 @@ function AchievementBadges({ achievements, lang }: { achievements: Achievement[]
   );
 }
 
+// Preview-only mock data, activated by ?peerMock=1 on /student. Lets the UI be
+// inspected before any real featured submissions exist in the database.
+const PEER_FEED_PREVIEW_MOCK: PeerFeedItem[] = [
+  {
+    id: 'mock-correction-1',
+    featuredAt: '2026-05-30T14:23:00Z',
+    category: 'correction',
+    angle: '她敢承认接发后第二拍总是慢半拍——先注意自己慢，比直接练快更重要。',
+    tier: 'C2',
+    submissionType: 'match',
+    happenedAt: '2026-05-29',
+    excerpt: {
+      match: '周末双打练习赛',
+      score: '21-18 / 17-21',
+      whatWorked: '上半局拉吊结合用得不错。',
+      nextAdjustment:
+        '今天打练习赛发现接发后我总是站着等下一拍。教练之前提醒过我接发完要主动上前压网，但实际打的时候大脑没切换过来。第二局对手吃透了这个习惯，连续靠这点打了我 4 个分。',
+      experience: '接发完成的那一拍就要心里默念"上"。',
+    },
+  },
+  {
+    id: 'mock-drill-2',
+    featuredAt: '2026-05-28T10:00:00Z',
+    category: 'drill_seed',
+    angle: '这个"重心往下 + 打到地上"是个好 drill 雏形，可以系统化做。',
+    tier: 'B1',
+    submissionType: 'lesson',
+    happenedAt: '2026-05-28',
+    excerpt: {
+      title: '接杀防守',
+      reflection: '今天教练说我接杀总是站太高，让我练习重心往下、把球打到地上的感觉。',
+      question: '想多练几种接杀回球的路线。',
+    },
+  },
+  {
+    id: 'mock-stuck-3',
+    featuredAt: '2026-05-27T10:00:00Z',
+    category: 'honest_stuck',
+    angle: '"我就是练不会反手"——承认卡点本身已经是进步。',
+    tier: 'C2',
+    submissionType: 'lesson',
+    happenedAt: '2026-05-27',
+    excerpt: {
+      title: '反手训练',
+      reflection: '我就是练不会反手高远球，每次都打不到位，想放弃。',
+      question: '反手有没有什么循序渐进的练法？',
+    },
+  },
+];
+
+function PeerExcerptParagraphs({ paragraphs, expanded, charLimit }: { paragraphs: string[]; expanded: boolean; charLimit: number }) {
+  // Truncate at character limit but keep paragraph structure. Returns paragraphs
+  // joined with double line breaks; truncation adds an ellipsis only when collapsed.
+  if (expanded) {
+    return (
+      <>
+        {paragraphs.map((p, i) => (
+          <p key={i} className={i > 0 ? 'mt-2' : ''}>
+            {p}
+          </p>
+        ))}
+      </>
+    );
+  }
+  let used = 0;
+  const trimmed: string[] = [];
+  for (const p of paragraphs) {
+    if (used >= charLimit) break;
+    const remaining = charLimit - used;
+    if (p.length <= remaining) {
+      trimmed.push(p);
+      used += p.length;
+    } else {
+      trimmed.push(p.slice(0, remaining) + '…');
+      used = charLimit;
+      break;
+    }
+  }
+  return (
+    <>
+      {trimmed.map((p, i) => (
+        <p key={i} className={i > 0 ? 'mt-2' : ''}>
+          {p}
+        </p>
+      ))}
+    </>
+  );
+}
+
+function PeerWallCard({
+  item,
+  lang,
+  read,
+  expanded,
+  onToggleExpand,
+  onMarkRead,
+}: {
+  item: PeerFeedItem;
+  lang: Lang;
+  read: boolean;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onMarkRead: () => void;
+}) {
+  const t = studentCopy[lang];
+  const categoryLabel = t.peerWallCategory[item.category] || item.category;
+  const tierLabel = t.peerWallAnonStudent(item.tier);
+  const typeLabel = item.submissionType === 'match' ? t.peerWallTypeMatch : t.peerWallTypeLesson;
+  const happenedLabel = item.happenedAt ? item.happenedAt.slice(0, 10) : item.featuredAt.slice(0, 10);
+
+  // Build excerpt paragraphs in display order based on submission type.
+  const paragraphs: string[] = [];
+  if (item.submissionType === 'lesson') {
+    if (item.excerpt.title) paragraphs.push(`【${item.excerpt.title}】`);
+    if (item.excerpt.reflection) paragraphs.push(item.excerpt.reflection);
+    if (item.excerpt.question) paragraphs.push(item.excerpt.question);
+  } else {
+    if (item.excerpt.match) paragraphs.push(`${item.excerpt.match}${item.excerpt.score ? ` · ${item.excerpt.score}` : ''}`);
+    if (item.excerpt.whatWorked) paragraphs.push(item.excerpt.whatWorked);
+    if (item.excerpt.nextAdjustment) paragraphs.push(item.excerpt.nextAdjustment);
+    if (item.excerpt.experience) paragraphs.push(item.excerpt.experience);
+  }
+
+  const totalChars = paragraphs.reduce((sum, p) => sum + p.length, 0);
+  const collapseLimit = 180;
+  const showToggle = totalChars > collapseLimit;
+
+  return (
+    <article className="rounded-lg border border-[#dfe7dc] bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-[#e9fbf3] px-2.5 py-0.5 text-xs font-semibold text-[#0e6f4d]">
+          {categoryLabel}
+        </span>
+        <span className="text-xs text-slate-500">{tierLabel}</span>
+        <span className="text-xs text-slate-400">·</span>
+        <span className="text-xs text-slate-500">{happenedLabel}</span>
+        <span className="text-xs text-slate-400">·</span>
+        <span className="text-xs text-slate-500">{typeLabel}</span>
+      </div>
+
+      {/* Coach angle gets prominent positioning — this is the quality signal */}
+      <div className="mt-3 rounded-md border-l-4 border-[#14bf96] bg-[#f4f8f1] px-3 py-2">
+        <div className="text-xs font-semibold text-[#0e6f4d]">{t.peerWallCoachAngle}</div>
+        <div className="mt-1 text-sm leading-6 text-slate-800">{item.angle}</div>
+      </div>
+
+      {paragraphs.length ? (
+        <div className="mt-3 text-sm leading-6 text-slate-700">
+          <PeerExcerptParagraphs paragraphs={paragraphs} expanded={expanded} charLimit={collapseLimit} />
+        </div>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        {showToggle ? (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="text-sm font-medium text-[#16845f] hover:text-[#0e5a40]"
+          >
+            {expanded ? t.peerWallCollapse : t.peerWallExpand}
+          </button>
+        ) : (
+          <span />
+        )}
+        <button
+          type="button"
+          onClick={read ? undefined : onMarkRead}
+          disabled={read}
+          className={
+            'min-h-9 rounded-md px-3 py-1.5 text-xs font-medium transition ' +
+            (read
+              ? 'cursor-default border border-[#cfe8d9] bg-[#f4f8f1] text-[#0e6f4d]'
+              : 'border border-[#cfe8d9] bg-white text-[#0e6f4d] hover:bg-[#f4f8f1]')
+          }
+        >
+          {read ? t.peerWallMarkedRead : t.peerWallMarkRead}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function readPeerWallReadIds(readKey: string) {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const saved = window.localStorage.getItem(readKey);
+    if (!saved) return [];
+
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function PeerWall({
+  items,
+  loading,
+  lang,
+  readKey,
+}: {
+  items: PeerFeedItem[];
+  loading: boolean;
+  lang: Lang;
+  readKey: string;
+}) {
+  const t = studentCopy[lang];
+  const [readIds, setReadIds] = useState<string[]>(() => readPeerWallReadIds(readKey));
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  function markRead(id: string) {
+    setReadIds((current) => {
+      if (current.includes(id)) return current;
+      const next = [...current, id];
+      try {
+        window.localStorage.setItem(readKey, JSON.stringify(next.slice(-100)));
+      } catch {
+        // Storage failures are non-fatal.
+      }
+      return next;
+    });
+  }
+
+  if (loading && !items.length) {
+    return (
+      <div className="rounded-md border border-[#dfe7dc] bg-[#f4f8f1] p-4 text-sm text-slate-500">
+        {lang === 'en' ? 'Loading...' : '读取中...'}
+      </div>
+    );
+  }
+
+  if (!items.length) {
+    return (
+      <div className="rounded-md border border-[#dfe7dc] bg-[#f4f8f1] p-4 text-sm text-slate-500">
+        {t.peerWallEmpty}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-slate-500">{t.peerWallDescription}</p>
+      {items.map((item) => (
+        <PeerWallCard
+          key={item.id}
+          item={item}
+          lang={lang}
+          read={readIds.includes(item.id)}
+          expanded={expandedId === item.id}
+          onToggleExpand={() => setExpandedId((id) => (id === item.id ? null : item.id))}
+          onMarkRead={() => markRead(item.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
 function StudentDashboard({ student, onLogout }: { student: StudentData; onLogout: () => void }) {
   const { lang, toggle } = useLang();
   const t = studentCopy[lang];
   const displayStudent = localizedStudent(student, lang);
+  const currentTrainingFocus =
+    displayStudent.today?.title ||
+    displayStudent.stage?.title ||
+    displayStudent.lessonSummary?.title ||
+    '';
   const draftKey = `goodminton-student-draft-${displayStudent.studentId}`;
   const logKey = `goodminton-student-submission-log-${displayStudent.studentId}`;
   const rank = displayRank(displayStudent.level, displayStudent.progress);
@@ -1748,6 +2054,8 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
   const [matchSubmissionLoading, setMatchSubmissionLoading] = useState(false);
   const [submissionLogs, setSubmissionLogs] = useState<StudentSubmissionLog[]>(() => readStudentSubmissionLogs(logKey));
   const [cloudLessonRecords, setCloudLessonRecords] = useState<NonNullable<StudentData['lessonHistory']>>([]);
+  const [peerFeed, setPeerFeed] = useState<PeerFeedItem[]>([]);
+  const [peerFeedLoading, setPeerFeedLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(() =>
     typeof window === 'undefined' ? true : Boolean(window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY)),
   );
@@ -1782,7 +2090,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
       submittedAt,
       lessonSummary: {
         date: displayStudent.lessonSummary?.date,
-        title: displayStudent.lessonSummary?.title,
+        title: currentTrainingFocus,
         studentReflection: lessonInput.studentReflection.trim(),
         question: lessonInput.question.trim(),
         confidence: Number(lessonInput.confidence),
@@ -1853,6 +2161,46 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
     void loadCloudSubmissions();
     return () => controller.abort();
   }, [logKey]);
+
+  // Peer feed (其他学员墙) — public read, no credential needed.
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadPeerFeed() {
+      try {
+        setPeerFeedLoading(true);
+
+        // Preview/debug shortcut: ?peerMock=1 (or sessionStorage flag) injects
+        // sample items so the UI can be inspected before the SQL migration runs
+        // and coach features any real submissions. Safe in production — only
+        // renders when the exact opt-in is present.
+        if (typeof window !== 'undefined') {
+          const fromQuery = new URLSearchParams(window.location.search).get('peerMock') === '1';
+          const fromSession = window.sessionStorage.getItem('goodminton-peer-mock') === '1';
+          if (fromQuery || fromSession) {
+            if (fromQuery) window.sessionStorage.setItem('goodminton-peer-mock', '1');
+            setPeerFeed(PEER_FEED_PREVIEW_MOCK);
+            return;
+          }
+        }
+
+        const response = await fetch('/api/peer-feed?limit=10', {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const payload = (await response.json().catch(() => ({}))) as { items?: PeerFeedItem[] };
+        if (Array.isArray(payload.items)) {
+          setPeerFeed(payload.items);
+        }
+      } catch {
+        // Silent — empty state will render.
+      } finally {
+        setPeerFeedLoading(false);
+      }
+    }
+    void loadPeerFeed();
+    return () => controller.abort();
+  }, []);
 
   async function submitStudentReview(submissionType: 'lesson' | 'match') {
     const isLesson = submissionType === 'lesson';
@@ -2028,10 +2376,6 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
             <Section id="student-section-1" title={t.lessonSummary}>
               <div className="space-y-4">
-                <div className="rounded-md bg-[#f4f8f1] p-4">
-                  <div className="text-sm text-slate-500">{displayStudent.lessonSummary?.date}</div>
-                  <div className="mt-1 text-lg font-semibold">{displayStudent.lessonSummary?.title}</div>
-                </div>
                 <label className="block">
                   <div className="text-sm font-medium">{t.lessonReflection}</div>
                   <textarea
@@ -2039,7 +2383,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
                     onChange={(event) =>
                       setLessonInput((value) => ({ ...value, studentReflection: event.target.value }))
                     }
-                    className="mt-2 min-h-28 w-full resize-y rounded-md border border-[#cfe8d9] bg-white px-3 py-2 text-base leading-6 outline-none focus:border-[#16845f] sm:text-sm"
+                    className="mt-2 min-h-72 w-full resize-y rounded-md border border-[#cfe8d9] bg-white px-3 py-2 text-base leading-6 outline-none focus:border-[#16845f] sm:min-h-80 sm:text-sm"
                     placeholder={t.lessonReflectionPlaceholder}
                   />
                 </label>
@@ -2048,20 +2392,25 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
                   <textarea
                     value={lessonInput.question}
                     onChange={(event) => setLessonInput((value) => ({ ...value, question: event.target.value }))}
-                    className="mt-2 min-h-20 w-full resize-y rounded-md border border-[#cfe8d9] bg-white px-3 py-2 text-base leading-6 outline-none focus:border-[#16845f] sm:text-sm"
+                    className="mt-2 min-h-16 w-full resize-y rounded-md border border-[#cfe8d9] bg-white px-3 py-2 text-base leading-6 outline-none focus:border-[#16845f] sm:min-h-20 sm:text-sm"
                     placeholder={t.learningInterestPlaceholder}
                   />
                 </label>
                 <label className="block">
-                  <div className="flex justify-between text-sm font-medium">
-                    <span>{t.confidence}</span>
-                    <span>{lessonInput.confidence} / 5</span>
+                  <div className="text-sm font-medium">{t.confidence}</div>
+                  <div className="mt-2 rounded-md border border-[#dfe7dc] bg-[#f7fbf5] px-3 py-2 text-sm leading-6 text-slate-600">
+                    <div className="text-xs text-slate-500">{displayStudent.lessonSummary?.date}</div>
+                    <div>
+                      <span className="font-medium text-slate-900">{lang === 'en' ? 'Training focus: ' : '训练重点：'}</span>
+                      {currentTrainingFocus || t.empty}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {lang === 'en'
+                        ? `Current self-check: ${lessonInput.confidence} / 5`
+                        : `当前自评：${lessonInput.confidence} / 5`}
+                    </div>
                   </div>
-                  <div className="mt-1 rounded-md bg-[#f4f8f1] px-3 py-2 text-sm leading-6 text-slate-600">
-                    <span className="font-medium text-slate-900">{lang === 'en' ? 'Focus: ' : '重点：'}</span>
-                    {displayStudent.lessonSummary?.title || t.empty}
-                  </div>
-                  <ConfidencePicker value={lessonInput.confidence} onChange={(confidence) => setLessonInput((value) => ({ ...value, confidence }))} />
+                  <ConfidencePicker lang={lang} value={lessonInput.confidence} onChange={(confidence) => setLessonInput((value) => ({ ...value, confidence }))} />
                 </label>
                 <div className="rounded-md border border-[#dfe7dc] bg-[#f4f8f1] p-4">
                   <div className="text-sm font-medium">{t.coachObservation}</div>
@@ -2235,6 +2584,16 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
             </Section>
           ) : null}
 
+          <Section title={t.peerWall}>
+            <PeerWall
+              key={displayStudent.studentId}
+              items={peerFeed}
+              loading={peerFeedLoading}
+              lang={lang}
+              readKey={`goodminton-peer-read-${displayStudent.studentId}`}
+            />
+          </Section>
+
         </div>
       </div>
         </div>
@@ -2300,12 +2659,6 @@ export default function StudentPage() {
           typeof rawCredential === 'string' ? rawCredential.trim() : `${rawCredential.studentId || ''}${rawCredential.accessCode || ''}`,
         );
         window.dispatchEvent(new Event(STUDENT_SESSION_EVENT));
-        window.setTimeout(() => {
-          if (!readCurrentStudent()) return;
-          if (!document.body.textContent?.includes(payload.student?.name || '')) {
-            window.location.replace('/student');
-          }
-        }, 250);
       } catch {
         // Some mobile/private browsers reject storage writes. The React state above still opens the page.
       }
