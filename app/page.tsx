@@ -1,9 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import ContactFooter from './components/ContactFooter';
 import { useLang } from './components/LangContext';
 
@@ -413,11 +412,6 @@ export default function Home() {
   const articleList = articlePosts[lang];
   const showcaseList = studentShowcase[lang];
   const coach = coaches[lang][0];
-  const router = useRouter();
-  const [studentId, setStudentId] = useState('');
-  const [studentError, setStudentError] = useState('');
-  const [studentStatus, setStudentStatus] = useState('');
-  const [studentLoading, setStudentLoading] = useState(false);
   const [showcaseOpen, setShowcaseOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -472,42 +466,6 @@ export default function Home() {
       isMounted = false;
     };
   }, []);
-
-  async function loginStudent(rawCredential: string) {
-    if (studentLoading) return;
-
-    const trimmedCredential = rawCredential.trim();
-    if (!trimmedCredential) {
-      setStudentError(t.emptyStudent);
-      setStudentStatus('');
-      return;
-    }
-
-    setStudentError('');
-    setStudentStatus(t.openingStudent);
-    setStudentLoading(true);
-
-    try {
-      const langParam = lang === 'en' ? '&lang=en' : '';
-      router.push(`/student?credential=${encodeURIComponent(trimmedCredential)}${langParam}`);
-    } catch (requestError) {
-      setStudentError(
-        requestError instanceof Error
-            ? requestError.message
-            : lang === 'zh'
-              ? '读取失败。'
-              : 'Failed to load student data.',
-      );
-      setStudentStatus('');
-    } finally {
-      setStudentLoading(false);
-    }
-  }
-
-  async function handleStudentLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    await loginStudent(studentId);
-  }
 
   function handleNavClick(href: string) {
     if (href === '#student-showcase') {
@@ -652,59 +610,29 @@ export default function Home() {
           </div>
 
           <aside className="space-y-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-14">
-            <form
-              onSubmit={handleStudentLogin}
-              className="overflow-hidden rounded-xl border border-[#d8e6da] bg-white shadow-[0_20px_48px_-34px_rgba(18,70,49,.45)]"
-            >
-              <div className="bg-[#176a4b] px-5 py-4 text-white">
-                <p className="text-xs font-semibold text-white/65">{lang === 'zh' ? '训练档案' : 'Training profile'}</p>
-                <h2 className="mt-1 text-xl font-semibold">{lang === 'zh' ? '学生页面' : 'Student page'}</h2>
-                <p className="mt-1 text-sm text-white/75">{t.studentDesc}</p>
-              </div>
-              <div className="p-5">
-                <label className="block text-[13px] font-semibold text-[#40525b]">
-                  <span className="sr-only">{t.studentIdLabel}</span>
-                  <input
-                    value={studentId}
-                    onChange={(event) => {
-                      setStudentId(event.target.value);
-                      setStudentError('');
-                      setStudentStatus('');
-                    }}
-                    className="h-12 w-full rounded-[8px] border border-[#cfe8d9] bg-[#fffdf8] px-3 text-[15px] text-[#101820] outline-none transition-colors placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
-                    placeholder={t.studentIdPlaceholder}
-                    autoComplete="username"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  disabled={studentLoading || !studentId.trim()}
-                  className="mt-3 h-12 w-full rounded-[8px] bg-[#176a4b] px-4 text-[15px] font-semibold text-white transition-colors hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96] disabled:cursor-not-allowed disabled:bg-[#d8e8dc] disabled:text-[#768c7d]"
+            <section className="rounded-xl border border-[#d8e6da] bg-white p-4 shadow-[0_20px_48px_-34px_rgba(18,70,49,.45)]">
+              <h2 className="px-1 text-lg font-semibold text-[#101820]">{lang === 'zh' ? '常用入口' : 'Quick access'}</h2>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <Link
+                  href="/student"
+                  className="group flex min-h-24 flex-col justify-between rounded-lg bg-[#176a4b] p-4 text-white transition-transform hover:-translate-y-0.5 hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
                 >
-                  {studentLoading ? t.loadingStudent : t.studentCta}
-                </button>
-                {studentStatus ? <p className="mt-3 text-[14px] text-[#64737a]">{studentStatus}</p> : null}
-                {studentError ? <p className="mt-3 text-[14px] text-[#b42318]">{studentError}</p> : null}
-
-                <div className="my-5 flex items-center gap-3 text-xs text-[#8a969b]">
-                  <span className="h-px flex-1 bg-[#e6e1d4]" />
-                  <span>{lang === 'zh' ? '交流社区' : 'Community'}</span>
-                  <span className="h-px flex-1 bg-[#e6e1d4]" />
-                </div>
+                  <span className="text-xs font-semibold text-white/65">{lang === 'zh' ? '训练档案' : 'Training'}</span>
+                  <span className="flex items-end justify-between gap-2 text-base font-bold">
+                    {lang === 'zh' ? '学生页面' : 'Student'} <span aria-hidden="true">→</span>
+                  </span>
+                </Link>
                 <Link
                   href="/forum"
-                  className="flex min-h-12 items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-sm font-semibold text-[#0e6f4d] transition-colors hover:border-[#79b99a] hover:bg-[#e3f4eb]"
+                  className="group flex min-h-24 flex-col justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] p-4 text-[#0e6f4d] transition-transform hover:-translate-y-0.5 hover:border-[#79b99a] hover:bg-[#e3f4eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
                 >
-                  <span>
-                    <span className="block text-base">{lang === 'zh' ? '论坛' : 'Forum'}</span>
-                    <span className="mt-0.5 block text-xs font-medium text-[#527364]">{lang === 'zh' ? '交流、复盘和约球' : 'Talk, review, and find games'}</span>
+                  <span className="text-xs font-semibold text-[#527364]">{lang === 'zh' ? '交流与约球' : 'Community'}</span>
+                  <span className="flex items-end justify-between gap-2 text-base font-bold">
+                    {lang === 'zh' ? '论坛' : 'Forum'} <span aria-hidden="true">→</span>
                   </span>
-                  <span aria-hidden="true">→</span>
                 </Link>
               </div>
-            </form>
+            </section>
 
             <section className="rounded-[8px] border border-[#dfe7dc] bg-white p-5 shadow-[0_18px_40px_-32px_rgba(18,18,18,0.28)]">
               <MangoLogo />
