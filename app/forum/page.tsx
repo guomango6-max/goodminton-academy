@@ -599,11 +599,13 @@ function ForumEntryGate({ lang, onEnter }: { lang: Lang; onEnter: (identity: For
         {mode ? (
           <form onSubmit={submit} className="mt-4 space-y-3">
             <input
-              type={mode === 'student' ? 'password' : 'text'}
+              type="text"
               value={value}
               onChange={(event) => setValue(event.target.value)}
               placeholder={mode === 'student' ? (lang === 'zh' ? '学员 ID' : 'Student ID') : (lang === 'zh' ? '游客昵称（2–20 字）' : 'Guest nickname')}
               autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
               autoFocus
               maxLength={mode === 'guest' ? 20 : 80}
               className="h-12 w-full rounded-lg border border-[#cfe3d4] bg-white px-3 text-[15px] outline-none focus:border-[#14bf96]"

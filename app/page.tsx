@@ -693,12 +693,17 @@ export default function Home() {
                   <div id="home-forum-entry" className="pt-3">
                     <form onSubmit={handleForumStudentLogin}>
                       <label className="sr-only" htmlFor="home-forum-student-id">{t.studentIdLabel}</label>
+                      {/* 学员 ID 明文显示：遮蔽会让打错看不见，而它只是一个
+                          五位左右的短码，学员多在手机上输入。登录侧做了
+                          toLowerCase 归一，键盘自动大写不会导致登录失败。 */}
                       <input
                         id="home-forum-student-id"
                         name="forumCredential"
                         required
-                        type="password"
+                        type="text"
                         autoComplete="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
                         placeholder={lang === 'zh' ? '输入学员 ID' : 'Enter student ID'}
                         onChange={() => setForumLoginError('')}
                         className="h-12 w-full rounded-lg border border-[#cfe0d4] bg-[#fffdf8] px-4 text-[15px] text-[#101820] outline-none placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
