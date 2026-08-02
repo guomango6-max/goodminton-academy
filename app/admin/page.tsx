@@ -21,8 +21,12 @@ const button = 'rounded-lg bg-[#176a4b] px-4 py-2 text-sm font-semibold text-whi
 
 export default function AdminPage() {
   const [status, setStatus] = useState<AdminState | null>(null);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('guomango6@gmail.com');
   const [password, setPassword] = useState('');
+  const [setupAvailable, setSetupAvailable] = useState(false);
+  const [setupToken, setSetupToken] = useState('');
+  const [setupPassword, setSetupPassword] = useState('');
+  const [setupPasswordAgain, setSetupPasswordAgain] = useState('');
   const [code, setCode] = useState('');
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [busy, setBusy] = useState(false);
@@ -39,7 +43,16 @@ export default function AdminPage() {
     void fetch('/api/admin/session', { cache: 'no-store' })
       .then((response) => response.json().then((data) => ({ response, data })))
       .then(({ response, data }) => {
-        if (active) setStatus(response.ok ? data : { authenticated: false });
+        if (!active) return;
+        setStatus(response.ok ? data : { authenticated: false });
+        if (!response.ok) {
+          void fetch('/api/admin/setup', { cache: 'no-store' })
+            .then((setupResponse) => setupResponse.json())
+            .then((setupData) => {
+              if (active) setSetupAvailable(Boolean(setupData.setupAvailable));
+            })
+            .catch(() => undefined);
+        }
       })
       .catch(() => {
         if (active) setStatus({ authenticated: false });
@@ -65,6 +78,42 @@ export default function AdminPage() {
       setStatus(data);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '登录失败。');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setup(event: React.FormEvent) {
+    event.preventDefault();
+    if (setupPassword !== setupPasswordAgain) {
+      setError('两次输入的密码不一致。');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/admin/setup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password: setupPassword, setupToken }),
+      });
+      const data = (await response.json().catch(() => ({}))) as AdminState;
+      if (!response.ok) throw new Error(data.error || '管理员创建失败。');
+
+      const loginResponse = await fetch('/api/admin/session', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password: setupPassword }),
+      });
+      const loginData = (await loginResponse.json().catch(() => ({}))) as AdminState;
+      if (!loginResponse.ok) throw new Error(loginData.error || '账号已创建，请重新登录。');
+      setSetupToken('');
+      setSetupPassword('');
+      setSetupPasswordAgain('');
+      setSetupAvailable(false);
+      setStatus(loginData);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '管理员创建失败。');
     } finally {
       setBusy(false);
     }
@@ -179,6 +228,30 @@ export default function AdminPage() {
               </button>
             </form>
           ) : null}
+          {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        </section>
+      </main>
+    );
+  }
+
+  if (setupAvailable) {
+    return (
+      <main className="mx-auto max-w-md px-4 py-12">
+        <section className={panel}>
+          <p className="text-xs font-semibold tracking-wide text-[#176a4b]">ONE-TIME SETUP</p>
+          <h1 className="mt-2 text-xl font-semibold text-slate-900">创建网站管理员</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            这是唯一一次创建入口。密码由你在这里设置，不会显示给我，也不会写入项目文件。
+          </p>
+          <form onSubmit={setup} className="mt-5 space-y-3">
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className={field} placeholder="管理员邮箱" autoComplete="username" />
+            <input type="password" value={setupPassword} onChange={(event) => setSetupPassword(event.target.value)} className={field} placeholder="设置密码（至少 14 位）" autoComplete="new-password" />
+            <input type="password" value={setupPasswordAgain} onChange={(event) => setSetupPasswordAgain(event.target.value)} className={field} placeholder="再次输入密码" autoComplete="new-password" />
+            <input type="password" value={setupToken} onChange={(event) => setSetupToken(event.target.value)} className={field} placeholder="现有教练令牌（一次性验证）" autoComplete="off" />
+            <button type="submit" disabled={busy || !email || setupPassword.length < 14 || !setupToken} className={button}>
+              {busy ? '正在创建…' : '创建唯一管理员'}
+            </button>
+          </form>
           {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         </section>
       </main>
