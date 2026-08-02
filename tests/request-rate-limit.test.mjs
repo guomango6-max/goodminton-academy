@@ -6,6 +6,7 @@ import {
   clearRequestRateLimitsForTests,
 } from '../lib/request-rate-limit.ts';
 import { normalizeForumNickname, validateForumNickname } from '../lib/forum-nickname.ts';
+import { forumArchivePrivacyFlags, prepareForumArchiveCandidate, redactForumArchiveNames, sanitizeForumArchiveFeedback } from '../lib/forum-archive.ts';
 
 function requestFrom(ip) {
   return new Request('https://goodminton.fi/api/test', {
@@ -48,4 +49,27 @@ test('normalizes nickname spacing and rejects reserved identities', () => {
   assert.equal(validateForumNickname('Mango Coach').error.length > 0, true);
   assert.equal(validateForumNickname('Badminton小白').error, '');
   assert.equal(validateForumNickname('北场小白').error, '');
+});
+
+test('forum archive redacts names and blocks identifying private details', () => {
+  assert.equal(redactForumArchiveNames('杨静南和 Eric 一起练球', ['杨静南', 'Eric']), '某位学员和 某位学员 一起练球');
+  assert.equal(redactForumArchiveNames('C1 成人女双能力初评', []), '双打能力初评');
+  assert.equal(redactForumArchiveNames('女双 A 组比赛复盘', []), '双打 分组比赛复盘');
+  assert.deepEqual(forumArchivePrivacyFlags('学员肘部仍有痛感'), ['伤病健康']);
+
+  const result = prepareForumArchiveCandidate({
+    external_id: 'one',
+    created_at: '2026-08-01T00:00:00.000Z',
+    happened_at: '2026-07-01',
+    student_id: 'student-one',
+    record_type: 'lesson_summary',
+    title: '网前练习',
+    payload: { lessonSummary: { title: '网前练习', studentReflection: '杨静南今天肘部有痛感。' } },
+    coach_feedback: '',
+  }, ['杨静南']);
+  assert.match(result.skip, /伤病健康/);
+
+  const feedback = sanitizeForumArchiveFeedback('第一段是技术点评。\n\n肘——有任何不舒服要说。', []);
+  assert.equal(feedback.feedback, '第一段是技术点评。');
+  assert.equal(feedback.omittedParagraphs, 1);
 });

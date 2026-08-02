@@ -22,7 +22,8 @@
     "students:sync": "node scripts/sync-students-from-obsidian.mjs && npm run students:check-logins",
     "students:sync:dry": "node scripts/sync-students-from-obsidian.mjs --dry-run && node scripts/backfill-student-history-to-supabase.mjs --dry-run",
     "students:backfill-history": "node scripts/backfill-student-history-to-supabase.mjs",
-    "students:check-logins": "node scripts/check-student-login-registry.mjs"
+    "students:check-logins": "node scripts/check-student-login-registry.mjs",
+    "forum:archive": "node scripts/import-forum-archive.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.58",

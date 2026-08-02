@@ -83,6 +83,9 @@ npm run students:check-logins
 2. 确认公开接口的 `schemaReady` 从 `false` 变为 `true`。
 3. 在 Vercel 配置 `GOODMINTON_COACH_ACTION_TOKEN`，然后重新部署。
 4. 登录 `/coach` 验证评论审核、精选和私信。
+
+历史总结与复盘先运行 `npm run forum:archive` 预览匿名化、去重和隐私拦截结果；
+确认后才使用 `npm run forum:archive -- --apply`。论坛保存的是独立公开快照，不会改写或直接暴露学员历史原文。
 5. 使用 `node scripts/feature-peer-wall.mjs` 填充经确认的真实精选。
 
 迁移前页面会优雅降级为空状态；迁移执行后论坛写入立即生效，因此应先完成代码安全检查和

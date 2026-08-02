@@ -25,6 +25,8 @@ type HistoryRow = {
   featured_category: string | null;
   featured_tier: string | null;
   coach_feedback: string | null;
+  featured_excerpt: unknown;
+  featured_feedback: string | null;
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -76,10 +78,10 @@ function rowToFeedItem(row: HistoryRow): PeerFeedItem | null {
   let excerpt: PeerFeedItem['excerpt'];
   if (row.record_type === 'match_review') {
     submissionType = 'match';
-    excerpt = extractMatchExcerpt(row.payload);
+    excerpt = isObject(row.featured_excerpt) ? row.featured_excerpt : extractMatchExcerpt(row.payload);
   } else if (row.record_type === 'lesson_summary' || row.record_type === 'lesson_record') {
     submissionType = 'lesson';
-    excerpt = extractLessonExcerpt(row.payload);
+    excerpt = isObject(row.featured_excerpt) ? row.featured_excerpt : extractLessonExcerpt(row.payload);
   } else {
     return null;
   }
@@ -87,7 +89,7 @@ function rowToFeedItem(row: HistoryRow): PeerFeedItem | null {
   // 点评 is a public channel by design (2026-08-01): the coach writes it
   // knowing the whole roster reads it. Anything meant for one person goes to
   // the private thread in /api/student-messages instead.
-  const coachFeedback = str(row.coach_feedback);
+  const coachFeedback = str(row.featured_feedback) || str(row.coach_feedback);
 
   return {
     id: row.external_id,
@@ -121,7 +123,7 @@ export async function GET(req: Request) {
   const { data, error } = await supabase
     .from('student_history_records')
     .select(
-      'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier, coach_feedback',
+      'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier, coach_feedback, featured_excerpt, featured_feedback',
     )
     .eq('featured', true)
     .order('featured_at', { ascending: false, nullsFirst: false })

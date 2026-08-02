@@ -5,14 +5,15 @@
 -- （if not exists / add column if not exists），重复跑安全。
 --
 -- 这是为了少切几次文件的合并副本；权威版本是 migrations/ 下的
--- 五个文件，改动请改那边：
+-- 六个文件，改动请改那边：
 --   2026-06-07_peer_wall.sql
 --   2026-08-01_student_messages.sql
 --   2026-08-01_forum_comments.sql
 --   2026-08-02_forum_posts.sql
 --   20260802090124_forum_profiles.sql
+--   20260802092433_forum_archive_snapshots.sql
 --
--- 2026-08-02 探测确认：以下五块在生产库里都还不存在。
+-- 2026-08-02 探测确认：以下六块在生产库里都还不存在。
 -- ============================================================
 
 
@@ -130,6 +131,19 @@ create unique index if not exists forum_profiles_nickname_unique_idx
 
 alter table public.forum_profiles enable row level security;
 revoke all on public.forum_profiles from anon, authenticated;
+
+
+-- ---------- 6. 论坛历史内容匿名快照 ----------
+
+alter table public.student_history_records
+  add column if not exists featured_excerpt jsonb,
+  add column if not exists featured_feedback text;
+
+comment on column public.student_history_records.featured_excerpt is
+  'Anonymized public snapshot used by the forum; never the private source payload.';
+
+comment on column public.student_history_records.featured_feedback is
+  'Anonymized public coach feedback snapshot; private coach_feedback remains unchanged.';
 
 
 -- ---------- 验收 ----------
