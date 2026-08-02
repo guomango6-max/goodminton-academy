@@ -17,6 +17,42 @@ type ForumIdentity =
 
 const FORUM_IDENTITY_KEY = 'goodminton-forum-identity';
 
+// 身份存两处，是有意的：
+//   游客昵称  → localStorage。它不是凭据，忘掉它没有任何安全收益，只会让
+//              同一个人这次叫「小王」下次叫「王同学」，留言前后对不上号。
+//   学员身份  → sessionStorage。它由登录凭据换来，跨浏览器会话保留反而更糟
+//              （共用设备时下一个人打开就是你）。
+function saveIdentity(identity: ForumIdentity) {
+  const raw = JSON.stringify(identity);
+  try {
+    if (identity.kind === 'guest') window.localStorage.setItem(FORUM_IDENTITY_KEY, raw);
+    else window.sessionStorage.setItem(FORUM_IDENTITY_KEY, raw);
+  } catch {
+    // 隐私模式下写入会抛异常，忽略即可——只是这次不记住。
+  }
+}
+
+function loadIdentity(): ForumIdentity | null {
+  try {
+    const raw =
+      window.sessionStorage.getItem(FORUM_IDENTITY_KEY) || window.localStorage.getItem(FORUM_IDENTITY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ForumIdentity;
+    return parsed?.kind === 'student' || parsed?.kind === 'guest' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearIdentity() {
+  try {
+    window.sessionStorage.removeItem(FORUM_IDENTITY_KEY);
+    window.localStorage.removeItem(FORUM_IDENTITY_KEY);
+  } catch {
+    // 同上。
+  }
+}
+
 type ForumComment = {
   id: string;
   postId: string;
@@ -497,7 +533,7 @@ function ForumEntryGate({ lang, onEnter }: { lang: Lang; onEnter: (identity: For
         return;
       }
       const identity: ForumIdentity = { kind: 'guest', label: checked.nickname };
-      window.sessionStorage.setItem(FORUM_IDENTITY_KEY, JSON.stringify(identity));
+      saveIdentity(identity);
       onEnter(identity);
       return;
     }
@@ -531,7 +567,7 @@ function ForumEntryGate({ lang, onEnter }: { lang: Lang; onEnter: (identity: For
         kind: 'student',
         label: nickname || (lang === 'zh' ? '学员' : 'Student'),
       };
-      window.sessionStorage.setItem(FORUM_IDENTITY_KEY, JSON.stringify(identity));
+      saveIdentity(identity);
       onEnter(identity);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '登录失败。');
@@ -808,23 +844,13 @@ export default function ForumPage() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      try {
-        const saved = window.sessionStorage.getItem(FORUM_IDENTITY_KEY);
-        if (!saved) {
-          setIdentity(null);
-          return;
-        }
-        const parsed = JSON.parse(saved) as ForumIdentity;
-        setIdentity(parsed?.kind === 'student' || parsed?.kind === 'guest' ? parsed : null);
-      } catch {
-        setIdentity(null);
-      }
+      setIdentity(loadIdentity());
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
 
   function switchIdentity() {
-    window.sessionStorage.removeItem(FORUM_IDENTITY_KEY);
+    clearIdentity();
     setIdentity(null);
   }
 
