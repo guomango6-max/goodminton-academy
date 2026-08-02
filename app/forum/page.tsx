@@ -5,11 +5,11 @@
 // falls back to demo items when the feed is empty, so the page always renders.
 // Comments are name-only + coach moderation; the demo API keeps them in memory.
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLang, type Lang } from '../components/LangContext';
 import ContactFooter from '../components/ContactFooter';
-import type { PeerFeedItem } from '../../lib/peer-feed-types';
+import { PEER_FEED_CATEGORIES, type PeerFeedItem } from '../../lib/peer-feed-types';
 
 type ForumComment = {
   id: string;
@@ -71,9 +71,9 @@ const copy = {
   zh: {
     brand: 'Goodminton Academy',
     backHome: '返回首页',
-    kicker: '学员精华',
-    title: '真实的课后总结，配教练导读',
-    desc: '由教练从学员的课后总结和比赛复盘里精选，匿名展示。看别人怎么卡住、怎么想通，比只看正确动作更有用。',
+    kicker: 'Goodminton 论坛',
+    title: '一起练，一起想明白',
+    desc: '教练精选的课后总结和比赛复盘、学员之间的交流，还有约球。看别人怎么卡住、怎么想通，比只看正确动作更有用。',
     demoNote: '示例数据（演示）——正式内容由教练每周精选后发布。',
     emptyNote: '教练还没有精选内容。每周训练之后会陆续更新，欢迎再来看。',
     optOutNote: '内容经教练精选并匿名化展示。如不希望自己的总结出现在这里，告诉教练即可。',
@@ -89,7 +89,30 @@ const copy = {
       drill_seed: 'Drill 种子',
       honest_stuck: '诚实的卡住点',
       good_question: '好问题',
+      breakthrough: '想通了',
     } as Record<string, string>,
+    filterAll: '全部',
+    tabs: { lesson: '课后总结', match: '比赛复盘', discussion: '交流讨论', meetup: '球友约球' } as Record<string, string>,
+    tabHint: {
+      lesson: '教练从学员课后总结里精选，匿名展示。',
+      match: '教练从比赛复盘里精选，匿名展示。',
+      discussion: '学员自己发的话题。实名，发出即可见。',
+      meetup: '缺人就发一条。写清时间、地点、缺几个，过期自动下墙。',
+    } as Record<string, string>,
+    postsEmpty: '还没有内容，来发第一条。',
+    composeTitle: '标题（可选）',
+    composeBody: '想说的话',
+    composeMeetupBody: '补充说明，比如水平、场地费、带不带球',
+    composePlayAt: '开打时间',
+    composeLocation: '地点',
+    composeNeeded: '缺几人',
+    composeSubmit: '发布',
+    composeSubmitting: '发布中…',
+    composeNeedLogin: '发帖需要先在学员页登录。登录后回到这里即可。',
+    composeFailed: '发布失败。',
+    postDelete: '删除',
+    meetupAt: '开打',
+    meetupNeed: (n: number) => `缺 ${n} 人`,
     commentsTitle: '留言',
     commentsEmpty: '还没有留言。',
     commentName: '你的名字',
@@ -103,9 +126,9 @@ const copy = {
   en: {
     brand: 'Goodminton Academy',
     backHome: 'Back to home',
-    kicker: 'Student highlights',
-    title: 'Real lesson notes, with coach framing',
-    desc: 'Curated by the coach from student lesson summaries and match reviews, shown anonymously. Seeing how others get stuck and think it through beats only seeing perfect form.',
+    kicker: 'Goodminton Forum',
+    title: 'Train together, think it through together',
+    desc: 'Coach-curated lesson summaries and match reviews, student talk, and games to join. Seeing how others get stuck and think it through beats only seeing perfect form.',
     demoNote: 'Demo data — real highlights are published weekly by the coach.',
     emptyNote: 'The coach has not featured anything yet. New highlights go up after each week of training — check back soon.',
     optOutNote: 'Content is coach-curated and anonymized. If you prefer your notes stay private, just tell the coach.',
@@ -121,7 +144,30 @@ const copy = {
       drill_seed: 'Drill seed',
       honest_stuck: 'Honest stuck point',
       good_question: 'Good question',
+      breakthrough: 'Broke through',
     } as Record<string, string>,
+    filterAll: 'All',
+    tabs: { lesson: 'Lesson summaries', match: 'Match reviews', discussion: 'Discussion', meetup: 'Find players' } as Record<string, string>,
+    tabHint: {
+      lesson: 'Coach-curated from student lesson summaries, shown anonymously.',
+      match: 'Coach-curated from match reviews, shown anonymously.',
+      discussion: 'Posted by students under their own name, visible immediately.',
+      meetup: 'Short a player? Post the time, the place, and how many you need. Expired posts drop off.',
+    } as Record<string, string>,
+    postsEmpty: 'Nothing here yet — post the first one.',
+    composeTitle: 'Title (optional)',
+    composeBody: 'What do you want to say?',
+    composeMeetupBody: 'Anything else — level, court fee, who brings shuttles',
+    composePlayAt: 'When',
+    composeLocation: 'Where',
+    composeNeeded: 'Players needed',
+    composeSubmit: 'Post',
+    composeSubmitting: 'Posting…',
+    composeNeedLogin: 'Log in on the student page first, then come back here to post.',
+    composeFailed: 'Could not post.',
+    postDelete: 'Delete',
+    meetupAt: 'Plays',
+    meetupNeed: (n: number) => `needs ${n}`,
     commentsTitle: 'Comments',
     commentsEmpty: 'No comments yet.',
     commentName: 'Your name',
@@ -351,13 +397,207 @@ function HighlightCard({ item, lang, comments }: { item: PeerFeedItem; lang: Lan
   );
 }
 
+type ForumPost = {
+  id: string;
+  kind: 'discussion' | 'meetup';
+  student_id: string;
+  display_name: string;
+  title: string | null;
+  body: string;
+  play_at: string | null;
+  location: string | null;
+  players_needed: number | null;
+  created_at: string;
+};
+
+type TabKey = 'lesson' | 'match' | 'discussion' | 'meetup';
+const TABS: TabKey[] = ['lesson', 'match', 'discussion', 'meetup'];
+
+// 学员凭据存在学员页登录时写的 sessionStorage 里。发帖读它，
+// 服务端再据此解析身份——客户端传什么名字都不作数。
+const STUDENT_CREDENTIAL_KEY = 'goodminton-student-credential';
+
+function readCredential() {
+  try {
+    return window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDelete: (id: string) => void }) {
+  const t = copy[lang];
+  const isMeetup = post.kind === 'meetup';
+  return (
+    <article className="rounded-lg border border-[#e6e1d4] bg-white p-5">
+      <div className="flex flex-wrap items-baseline gap-2 text-[13px] text-[#64737a]">
+        <span className="font-semibold text-[#21242c]">{post.display_name}</span>
+        <span>· {new Date(post.created_at).toLocaleDateString()}</span>
+        {isMeetup && post.players_needed ? (
+          <span className="rounded bg-[#e8f7f1] px-1.5 py-0.5 font-semibold text-[#0e6f4d]">
+            {t.meetupNeed(post.players_needed)}
+          </span>
+        ) : null}
+      </div>
+
+      {post.title ? <h3 className="cjk-wrap mt-2 text-[17px] font-semibold text-[#101820]">{post.title}</h3> : null}
+
+      {isMeetup ? (
+        <p className="mt-2 text-[14px] text-[#0e6f4d]">
+          {t.meetupAt}：{post.play_at ? new Date(post.play_at).toLocaleString() : ''}
+          {post.location ? ` · ${post.location}` : ''}
+        </p>
+      ) : null}
+
+      <p className="cjk-wrap mt-2 whitespace-pre-wrap text-[15px] leading-7 text-[#52636b]">{post.body}</p>
+
+      <button
+        type="button"
+        onClick={() => onDelete(post.id)}
+        className="mt-3 text-[13px] text-[#8a969b] hover:text-[#c0392b]"
+      >
+        {t.postDelete}
+      </button>
+    </article>
+  );
+}
+
+function Composer({ kind, lang, onPosted }: { kind: 'discussion' | 'meetup'; lang: Lang; onPosted: () => void }) {
+  const t = copy[lang];
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [playAt, setPlayAt] = useState('');
+  const [location, setLocation] = useState('');
+  const [needed, setNeeded] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || !body.trim()) return;
+    const credential = readCredential();
+    if (!credential) {
+      setError(t.composeNeedLogin);
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/forum-posts', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          credential,
+          kind,
+          title: title.trim(),
+          body: body.trim(),
+          ...(kind === 'meetup'
+            ? { playAt, location: location.trim(), playersNeeded: Number(needed) || undefined }
+            : {}),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload?.error || t.composeFailed);
+      setTitle('');
+      setBody('');
+      setPlayAt('');
+      setLocation('');
+      setNeeded('');
+      onPosted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t.composeFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const field =
+    'w-full rounded-lg border border-[#e6e1d4] bg-white px-3 py-2 text-[15px] text-[#21242c] outline-none focus:border-[#9fb7a7]';
+
+  return (
+    <form onSubmit={submit} className="mt-6 space-y-2 rounded-lg border border-[#e6e1d4] bg-[#fdfcf8] p-4">
+      <input value={title} onChange={(e) => setTitle(e.target.value)} className={field} placeholder={t.composeTitle} maxLength={80} />
+      {kind === 'meetup' ? (
+        <div className="grid gap-2 sm:grid-cols-3">
+          <input type="datetime-local" value={playAt} onChange={(e) => setPlayAt(e.target.value)} className={field} />
+          <input value={location} onChange={(e) => setLocation(e.target.value)} className={field} placeholder={t.composeLocation} maxLength={80} />
+          <input type="number" min={1} max={20} value={needed} onChange={(e) => setNeeded(e.target.value)} className={field} placeholder={t.composeNeeded} />
+        </div>
+      ) : null}
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={3}
+        maxLength={2000}
+        className={field}
+        placeholder={kind === 'meetup' ? t.composeMeetupBody : t.composeBody}
+      />
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={busy || !body.trim()}
+          className="press rounded-[8px] border border-[#d8d0bf] bg-white px-3 py-1.5 text-[14px] font-semibold text-[#40525b] transition-colors hover:border-[#9fb7a7] disabled:opacity-50"
+        >
+          {busy ? t.composeSubmitting : t.composeSubmit}
+        </button>
+        {error ? <span className="text-[13px] text-[#c0392b]">{error}</span> : null}
+      </div>
+    </form>
+  );
+}
+
 export default function ForumPage() {
   const { lang, toggle } = useLang();
   const t = copy[lang];
   const [items, setItems] = useState<PeerFeedItem[]>([]);
   const [usingDemo, setUsingDemo] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // '' = 全部。一个流 + 属性筛选，不分板块：27 人的规模撑不起多个板块，
+  // 空板块比没有板块更伤。
+  const [activeCategory, setActiveCategory] = useState('');
   const [comments, setComments] = useState<Record<string, ForumComment[]>>({});
+  const [tab, setTab] = useState<TabKey>('lesson');
+  const [posts, setPosts] = useState<ForumPost[]>([]);
+
+  const curatedTab = tab === 'lesson' || tab === 'match';
+  // 总结 / 复盘 是同一批精选内容按来源分；record_type 早就在数据里。
+  const tabItems = items.filter((item) => item.submissionType === (tab === 'match' ? 'match' : 'lesson'));
+
+  // Order follows PEER_FEED_CATEGORIES so the chips do not reshuffle as the
+  // feed changes; only categories with at least one post are offered.
+  const presentCategories = PEER_FEED_CATEGORIES.filter((category) =>
+    tabItems.some((item) => item.category === category),
+  );
+  const visibleItems = activeCategory
+    ? tabItems.filter((item) => item.category === activeCategory)
+    : tabItems;
+
+  const loadPosts = useCallback(async () => {
+    try {
+      const response = await fetch('/api/forum-posts');
+      const payload = (await response.json()) as { posts?: ForumPost[] };
+      setPosts(payload.posts || []);
+    } catch {
+      setPosts([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
+
+  async function deletePost(id: string) {
+    const credential = readCredential();
+    if (!credential) return;
+    await fetch('/api/forum-posts', {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id, credential }),
+    }).catch(() => null);
+    void loadPosts();
+  }
+
+  const tabPosts = posts.filter((post) => post.kind === tab);
 
   useEffect(() => {
     let isMounted = true;
@@ -445,16 +685,83 @@ export default function ForumPage() {
           </p>
         ) : null}
 
-        {loaded && items.length === 0 ? (
+        <nav className="mt-7 flex flex-wrap gap-2 border-b border-[#e6e1d4] pb-3">
+          {TABS.map((key) => {
+            const active = tab === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setTab(key);
+                  setActiveCategory('');
+                }}
+                aria-pressed={active}
+                className={`press rounded-[8px] px-3 py-1.5 text-[15px] font-semibold transition-colors ${
+                  active ? 'bg-[#e8f7f1] text-[#0e6f4d]' : 'text-[#52636b] hover:text-[#0e6f4d]'
+                }`}
+              >
+                {t.tabs[key]}
+              </button>
+            );
+          })}
+        </nav>
+        <p className="cjk-wrap mt-3 text-[14px] leading-6 text-[#8a969b]">{t.tabHint[tab]}</p>
+
+        {!curatedTab ? (
+          <>
+            <Composer kind={tab === 'meetup' ? 'meetup' : 'discussion'} lang={lang} onPosted={loadPosts} />
+            {tabPosts.length === 0 ? (
+              <p className="cjk-wrap mt-6 rounded-md border border-[#e6e1d4] bg-[#f8f6ef] px-4 py-3 text-[15px] leading-7 text-[#52636b]">
+                {t.postsEmpty}
+              </p>
+            ) : (
+              <div className="mt-6 grid gap-4">
+                {tabPosts.map((post) => (
+                  <PostCard key={post.id} post={post} lang={lang} onDelete={deletePost} />
+                ))}
+              </div>
+            )}
+          </>
+        ) : loaded && tabItems.length === 0 ? (
           <p className="cjk-wrap mt-8 rounded-md border border-[#e6e1d4] bg-[#f8f6ef] px-4 py-3 text-[15px] leading-7 text-[#52636b]">
             {t.emptyNote}
           </p>
         ) : (
-          <div className="mt-8 grid gap-6">
-            {items.map((item) => (
-              <HighlightCard key={item.id} item={item} lang={lang} comments={comments[item.id] || []} />
-            ))}
-          </div>
+          <>
+            {/* Chips are built from the categories actually present, so a filter
+                never leads to an empty result — the reason for not splitting
+                this into boards in the first place. Hidden below two kinds,
+                where filtering buys nothing. */}
+            {presentCategories.length > 1 ? (
+              <div className="mt-7 flex flex-wrap gap-2">
+                {['', ...presentCategories].map((value) => {
+                  const active = activeCategory === value;
+                  return (
+                    <button
+                      key={value || 'all'}
+                      type="button"
+                      onClick={() => setActiveCategory(value)}
+                      aria-pressed={active}
+                      className={`press rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
+                        active
+                          ? 'border-[#14bf96] bg-[#e8f7f1] text-[#0e6f4d]'
+                          : 'border-[#e6e1d4] bg-white text-[#52636b] hover:border-[#9fb7a7]'
+                      }`}
+                    >
+                      {value ? t.category[value] || value : t.filterAll}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            <div className="mt-8 grid gap-6">
+              {visibleItems.map((item) => (
+                <HighlightCard key={item.id} item={item} lang={lang} comments={comments[item.id] || []} />
+              ))}
+            </div>
+          </>
         )}
 
         <p className="cjk-wrap mt-10 border-t border-[#e6e1d4] pt-5 text-[13px] leading-6 text-[#8a969b]">{t.optOutNote}</p>

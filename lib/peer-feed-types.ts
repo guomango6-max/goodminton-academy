@@ -4,17 +4,23 @@
 // if and only if `featured = true`. Coach controls the flag via the feature API;
 // students can request un-feature on their own rows.
 
+// Value types — what makes a post worth another student's time. Deliberately
+// not topic types (net / footwork / doubles): the coach already assigns one of
+// these when featuring, and a reader arrives wanting "something I can train"
+// or "someone who was stuck like me", not "posts about the net".
 export type PeerFeedCategory =
   | 'correction'    // 纠错点 — student wrote out an error they noticed
   | 'drill_seed'    // 好 drill 种子
   | 'honest_stuck'  // 诚实的卡住点
   | 'good_question' // 好问题
+  | 'breakthrough'  // 想通了 — 卡了一段时间之后打通的，含前后对照
 
 export const PEER_FEED_CATEGORIES: readonly PeerFeedCategory[] = [
   'correction',
   'drill_seed',
   'honest_stuck',
   'good_question',
+  'breakthrough',
 ] as const;
 
 export function isPeerFeedCategory(value: unknown): value is PeerFeedCategory {

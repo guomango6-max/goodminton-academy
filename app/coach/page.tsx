@@ -54,6 +54,7 @@ const CATEGORIES = [
   { value: 'drill_seed', label: 'drill 种子' },
   { value: 'honest_stuck', label: '诚实的卡住点' },
   { value: 'good_question', label: '好问题' },
+  { value: 'breakthrough', label: '想通了' },
 ];
 
 function card(extra = '') {
