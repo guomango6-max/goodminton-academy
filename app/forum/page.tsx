@@ -487,9 +487,9 @@ function HighlightCard({ item, lang, comments, identity, onNeedIdentity, open, o
   const collapseLimit = 180;
   const showToggle = totalChars > collapseLimit;
 
-  // 列表标题用教练导读，不用课次标题——课次标题会重复（"回归基线复查" 三条、
-  // "封网闭合…" 两条），列出来是一排看不出差别的行；导读每条都不一样。
-  const rowTitle = item.angle;
+  // 标题优先用教练拟的短标题；没有就退回导读（长，但至少每条不同），
+  // 课次标题不能用——它会在多条之间重复。
+  const rowTitle = item.title || item.angle;
   const meta = [categoryLabel, tierLabel, contentTitle, happenedLabel].filter(Boolean).join(' · ');
 
   return (
@@ -564,8 +564,8 @@ type ContentFilter = 'all' | ContentKind;
 const FILTERS: ContentFilter[] = ['all', 'lesson', 'match', 'discussion', 'meetup'];
 
 type FeedEntry =
-  | { source: 'curated'; kind: 'lesson' | 'match'; sortAt: string; item: PeerFeedItem }
-  | { source: 'post'; kind: 'discussion' | 'meetup'; sortAt: string; post: ForumPost };
+  | { source: 'curated'; kind: 'lesson' | 'match'; sortAt: string; pinned: boolean; item: PeerFeedItem }
+  | { source: 'post'; kind: 'discussion' | 'meetup'; sortAt: string; pinned: boolean; post: ForumPost };
 
 // 学员凭据存在学员页登录时写的 sessionStorage 里。发帖读它，
 // 服务端再据此解析身份——客户端传什么名字都不作数。
@@ -940,17 +940,24 @@ export default function ForumPage() {
       source: 'curated',
       kind: item.submissionType,
       sortAt: item.featuredAt,
+      pinned: Boolean(item.pinned),
       item,
     })),
     ...posts.map((post): FeedEntry => ({
       source: 'post',
       kind: post.kind,
       sortAt: post.created_at,
+      pinned: false,
       post,
     })),
   ]
     .filter((entry) => activeFilter === 'all' || entry.kind === activeFilter)
-    .sort((left, right) => right.sortAt.localeCompare(left.sortAt));
+    // 加精置顶永远在最前。接口已经排好了，但这里把精选和自发帖合并后要重排，
+    // 只按时间排会把置顶顺序覆盖掉——刚发的约球帖会压过加精内容。
+    .sort((left, right) => {
+      if (left.pinned !== right.pinned) return left.pinned ? -1 : 1;
+      return right.sortAt.localeCompare(left.sortAt);
+    });
 
   const loadPosts = useCallback(async () => {
     try {

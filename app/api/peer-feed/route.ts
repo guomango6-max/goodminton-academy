@@ -24,6 +24,7 @@ type HistoryRow = {
   featured_angle: string | null;
   featured_category: string | null;
   featured_tier: string | null;
+  featured_title?: string | null;
   featured_pinned?: boolean | null;
   coach_feedback: string | null;
   featured_excerpt: unknown;
@@ -98,6 +99,7 @@ function rowToFeedItem(row: HistoryRow): PeerFeedItem | null {
     category,
     angle,
     tier: str(row.featured_tier),
+    ...(str(row.featured_title) ? { title: str(row.featured_title) } : {}),
     ...(row.featured_pinned ? { pinned: true } : {}),
     submissionType,
     happenedAt: row.happened_at,
@@ -123,7 +125,7 @@ export async function GET(req: Request) {
   }
 
   const BASE_COLUMNS =
-    'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier, coach_feedback, featured_excerpt, featured_feedback';
+    'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier, featured_title, coach_feedback, featured_excerpt, featured_feedback';
 
   // 置顶是后加的列。先带着它查；如果这个库还没跑 2026-08-02_featured_pinned，
   // 退回不带置顶的查询——宁可暂时没有置顶，也不能让整面墙变空。

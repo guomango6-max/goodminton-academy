@@ -39,6 +39,9 @@ export type PeerFeedItem = {
   // 加精置顶。featured = 值得放上来；pinned = 值得别人专门来看。
   // 后者必须少，否则置顶等于没置顶。
   pinned?: boolean;
+  // 收起列表里那一行显示的短标题。课次标题会重复，导读是段落，两者都
+  // 当不了标题，所以单独存。缺失时前端退回用导读。
+  title?: string;
   submissionType: PeerFeedSubmissionType;
   happenedAt: string | null;                 // date of the lesson / match
   // The coach's written reply. 点评 is a PUBLIC channel by design
