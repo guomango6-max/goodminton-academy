@@ -478,6 +478,13 @@ function ForumEntryGate({ lang, onEnter }: { lang: Lang; onEnter: (identity: For
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    const entry = new URLSearchParams(window.location.search).get('entry');
+    if (entry !== 'guest' && entry !== 'student') return;
+    const timer = window.setTimeout(() => setMode(entry), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!mode || busy) return;

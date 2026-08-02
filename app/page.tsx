@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ContactFooter from './components/ContactFooter';
@@ -415,6 +415,9 @@ export default function Home() {
   const [showcaseOpen, setShowcaseOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [forumEntryOpen, setForumEntryOpen] = useState(false);
+  const [forumLoginBusy, setForumLoginBusy] = useState(false);
+  const [forumLoginError, setForumLoginError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -473,6 +476,46 @@ export default function Home() {
     }
     if (href === '#coach') {
       setCoachOpen(true);
+    }
+  }
+
+  async function handleForumStudentLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (forumLoginBusy) return;
+
+    const form = new FormData(event.currentTarget);
+    const credential = String(form.get('forumCredential') || '').trim();
+    if (!credential) return;
+
+    setForumLoginBusy(true);
+    setForumLoginError('');
+    try {
+      const response = await fetch('/api/student-data', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ studentId: credential, accessCode: '' }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { student?: { name?: string }; error?: string };
+      if (!response.ok || !payload.student) throw new Error(payload.error || (lang === 'zh' ? '学员 ID 不正确。' : 'Invalid student ID.'));
+
+      window.sessionStorage.setItem('goodminton-student-credential', credential);
+      const profileResponse = await fetch('/api/forum-profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      }).catch(() => null);
+      const profile = profileResponse?.ok
+        ? ((await profileResponse.json().catch(() => ({}))) as { nickname?: string })
+        : {};
+      window.sessionStorage.setItem('goodminton-forum-identity', JSON.stringify({
+        kind: 'student',
+        label: profile.nickname || (lang === 'zh' ? '学员' : 'Student'),
+      }));
+      window.location.assign('/forum');
+    } catch (reason) {
+      setForumLoginError(reason instanceof Error ? reason.message : (lang === 'zh' ? '登录失败。' : 'Login failed.'));
+      setForumLoginBusy(false);
     }
   }
 
@@ -635,16 +678,52 @@ export default function Home() {
                   <span aria-hidden="true">→</span>
                 </button>
               </form>
-              <Link
-                href="/forum"
-                className="mt-3 flex h-12 items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-[15px] font-bold text-[#0e6f4d] transition-colors hover:border-[#79b99a] hover:bg-[#e3f4eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
-              >
-                <span>
-                  {lang === 'zh' ? '进入论坛' : 'Open forum'}
-                  <span className="ml-2 text-xs font-medium text-[#527364]">{lang === 'zh' ? '交流与约球' : 'Community'}</span>
-                </span>
-                <span aria-hidden="true">→</span>
-              </Link>
+              <div className="mt-4 border-t border-[#e1e9e2] pt-4">
+                <button
+                  type="button"
+                  aria-expanded={forumEntryOpen}
+                  aria-controls="home-forum-entry"
+                  onClick={() => setForumEntryOpen((open) => !open)}
+                  className="flex h-11 w-full items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-[15px] font-bold text-[#0e6f4d] transition-colors hover:bg-[#e3f4eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+                >
+                  <span>{lang === 'zh' ? '论坛' : 'Forum'}</span>
+                  <span aria-hidden="true" className="text-lg">{forumEntryOpen ? '−' : '+'}</span>
+                </button>
+                {forumEntryOpen ? (
+                  <div id="home-forum-entry" className="pt-3">
+                    <form onSubmit={handleForumStudentLogin}>
+                      <label className="sr-only" htmlFor="home-forum-student-id">{t.studentIdLabel}</label>
+                      <input
+                        id="home-forum-student-id"
+                        name="forumCredential"
+                        required
+                        type="password"
+                        autoComplete="off"
+                        placeholder={lang === 'zh' ? '输入学员 ID' : 'Enter student ID'}
+                        onChange={() => setForumLoginError('')}
+                        className="h-12 w-full rounded-lg border border-[#cfe0d4] bg-[#fffdf8] px-4 text-[15px] text-[#101820] outline-none placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
+                      />
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <button
+                          type="submit"
+                          disabled={forumLoginBusy}
+                          className="h-11 rounded-lg bg-[#176a4b] px-3 text-sm font-bold text-white transition-colors hover:bg-[#0e5a40] disabled:opacity-60"
+                        >
+                          {forumLoginBusy ? (lang === 'zh' ? '验证中…' : 'Checking…') : (lang === 'zh' ? '学员进入' : 'Student entry')}
+                        </button>
+                        <Link
+                          href="/forum?entry=guest"
+                          onClick={() => window.sessionStorage.removeItem('goodminton-forum-identity')}
+                          className="flex h-11 items-center justify-center rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-3 text-sm font-bold text-[#0e6f4d] transition-colors hover:bg-[#e3f4eb]"
+                        >
+                          {lang === 'zh' ? '游客访问' : 'Guest access'}
+                        </Link>
+                      </div>
+                    </form>
+                    {forumLoginError ? <p className="mt-2 text-sm text-[#b42318]">{forumLoginError}</p> : null}
+                  </div>
+                ) : null}
+              </div>
             </section>
 
             <section className="rounded-[8px] border border-[#dfe7dc] bg-white p-5 shadow-[0_18px_40px_-32px_rgba(18,18,18,0.28)]">

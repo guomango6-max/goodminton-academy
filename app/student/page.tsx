@@ -2225,6 +2225,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
   const [cloudLessonRecords, setCloudLessonRecords] = useState<NonNullable<StudentData['lessonHistory']>>([]);
   const [peerFeed, setPeerFeed] = useState<PeerFeedItem[]>([]);
   const [peerFeedLoading, setPeerFeedLoading] = useState(false);
+  const [forumOpening, setForumOpening] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(() =>
     typeof window === 'undefined' ? true : Boolean(window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY)),
   );
@@ -2453,6 +2454,33 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
     }
   }
 
+  async function openForum() {
+    if (forumOpening) return;
+    setForumOpening(true);
+    try {
+      const credential = window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY) || '';
+      let nickname = '';
+      if (credential) {
+        const response = await fetch('/api/forum-profile', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ credential }),
+        }).catch(() => null);
+        if (response?.ok) {
+          const profile = (await response.json().catch(() => ({}))) as { nickname?: string };
+          nickname = profile.nickname || '';
+        }
+      }
+      window.sessionStorage.setItem('goodminton-forum-identity', JSON.stringify({
+        kind: 'student',
+        label: nickname || (lang === 'zh' ? '学员' : 'Student'),
+      }));
+      window.location.assign('/forum');
+    } catch {
+      window.location.assign('/forum?entry=student');
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[linear-gradient(90deg,rgba(22,132,95,.045)_1px,transparent_1px),linear-gradient(0deg,rgba(185,210,161,.05)_1px,transparent_1px),#fbfaf6] bg-[length:28px_28px] text-slate-900">
       <div className="grid min-h-screen grid-cols-[228px_minmax(0,1fr)] max-lg:grid-cols-1">
@@ -2466,7 +2494,15 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
           <div className="text-sm font-semibold">Goodminton Academy</div>
           <div className="text-sm text-slate-400 max-sm:hidden">/</div>
           <div className="truncate text-sm text-slate-600 max-sm:hidden">{t.breadcrumb}</div>
-          <button onClick={toggle} className="ml-auto min-h-11 rounded-md border border-[#cfe8d9] bg-white px-3 py-1.5 text-sm font-medium text-[#0e6f4d]">
+          <button
+            type="button"
+            onClick={() => void openForum()}
+            disabled={forumOpening}
+            className="ml-auto min-h-11 rounded-md bg-[#176a4b] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {forumOpening ? (lang === 'zh' ? '进入中…' : 'Opening…') : (lang === 'zh' ? '论坛' : 'Forum')}
+          </button>
+          <button onClick={toggle} className="min-h-11 rounded-md border border-[#cfe8d9] bg-white px-3 py-1.5 text-sm font-medium text-[#0e6f4d]">
             {lang === 'zh' ? 'EN' : '中文'}
           </button>
           <button onClick={onLogout} className="min-h-11 rounded-md border border-[#cfe8d9] bg-white px-3 py-1.5 text-sm font-medium text-[#0e6f4d]">
