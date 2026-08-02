@@ -75,6 +75,7 @@ const copy = {
     title: '真实的课后总结，配教练导读',
     desc: '由教练从学员的课后总结和比赛复盘里精选，匿名展示。看别人怎么卡住、怎么想通，比只看正确动作更有用。',
     demoNote: '示例数据（演示）——正式内容由教练每周精选后发布。',
+    emptyNote: '教练还没有精选内容。每周训练之后会陆续更新，欢迎再来看。',
     optOutNote: '内容经教练精选并匿名化展示。如不希望自己的总结出现在这里，告诉教练即可。',
     coachAngle: '教练导读',
     coachFeedback: '教练点评',
@@ -106,6 +107,7 @@ const copy = {
     title: 'Real lesson notes, with coach framing',
     desc: 'Curated by the coach from student lesson summaries and match reviews, shown anonymously. Seeing how others get stuck and think it through beats only seeing perfect form.',
     demoNote: 'Demo data — real highlights are published weekly by the coach.',
+    emptyNote: 'The coach has not featured anything yet. New highlights go up after each week of training — check back soon.',
     optOutNote: 'Content is coach-curated and anonymized. If you prefer your notes stay private, just tell the coach.',
     coachAngle: 'Coach note',
     coachFeedback: 'Coach feedback',
@@ -354,12 +356,28 @@ export default function ForumPage() {
   const t = copy[lang];
   const [items, setItems] = useState<PeerFeedItem[]>([]);
   const [usingDemo, setUsingDemo] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [comments, setComments] = useState<Record<string, ForumComment[]>>({});
 
   useEffect(() => {
     let isMounted = true;
 
+    // The demo posts are invented. This page is linked from the site nav and
+    // is headed "真实的课后总结", so showing them to a visitor by default would
+    // be a straight-up false claim. They are kept for previewing the layout
+    // and now require an explicit ?demo=1.
+    const wantsDemo = new URLSearchParams(window.location.search).get('demo') === '1';
+
     async function loadFeed() {
+      function fallback() {
+        if (wantsDemo) {
+          setItems(DEMO_ITEMS);
+          setUsingDemo(true);
+        } else {
+          setItems([]);
+        }
+      }
+
       try {
         const response = await fetch('/api/peer-feed?limit=20');
         const payload = (await response.json()) as { items?: PeerFeedItem[] };
@@ -367,13 +385,13 @@ export default function ForumPage() {
         if (response.ok && payload.items?.length) {
           setItems(payload.items);
         } else {
-          setItems(DEMO_ITEMS);
-          setUsingDemo(true);
+          fallback();
         }
       } catch {
         if (!isMounted) return;
-        setItems(DEMO_ITEMS);
-        setUsingDemo(true);
+        fallback();
+      } finally {
+        if (isMounted) setLoaded(true);
       }
     }
 
@@ -427,11 +445,17 @@ export default function ForumPage() {
           </p>
         ) : null}
 
-        <div className="mt-8 grid gap-6">
-          {items.map((item) => (
-            <HighlightCard key={item.id} item={item} lang={lang} comments={comments[item.id] || []} />
-          ))}
-        </div>
+        {loaded && items.length === 0 ? (
+          <p className="cjk-wrap mt-8 rounded-md border border-[#e6e1d4] bg-[#f8f6ef] px-4 py-3 text-[15px] leading-7 text-[#52636b]">
+            {t.emptyNote}
+          </p>
+        ) : (
+          <div className="mt-8 grid gap-6">
+            {items.map((item) => (
+              <HighlightCard key={item.id} item={item} lang={lang} comments={comments[item.id] || []} />
+            ))}
+          </div>
+        )}
 
         <p className="cjk-wrap mt-10 border-t border-[#e6e1d4] pt-5 text-[13px] leading-6 text-[#8a969b]">{t.optOutNote}</p>
       </main>
