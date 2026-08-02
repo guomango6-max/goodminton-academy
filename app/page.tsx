@@ -614,27 +614,37 @@ export default function Home() {
 
           <aside className="space-y-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-14">
             <section className="hidden rounded-xl border border-[#d8e6da] bg-white p-4 shadow-[0_20px_48px_-34px_rgba(18,70,49,.45)] lg:block">
-              <h2 className="px-1 text-lg font-semibold text-[#101820]">{lang === 'zh' ? '常用入口' : 'Quick access'}</h2>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <Link
-                  href="/student"
-                  className="group flex min-h-24 flex-col justify-between rounded-lg bg-[#176a4b] p-4 text-white transition-transform hover:-translate-y-0.5 hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+              <form action="/student" method="get">
+                <label className="sr-only" htmlFor="home-student-id">{t.studentIdLabel}</label>
+                <input
+                  id="home-student-id"
+                  name="credential"
+                  required
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder={t.studentIdPlaceholder}
+                  className="h-12 w-full rounded-lg border border-[#cfe0d4] bg-[#fffdf8] px-4 text-[15px] text-[#101820] outline-none placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
+                />
+                {lang === 'en' ? <input type="hidden" name="lang" value="en" /> : null}
+                <button
+                  type="submit"
+                  className="mt-3 flex h-12 w-full items-center justify-between rounded-lg bg-[#176a4b] px-4 text-[15px] font-bold text-white transition-colors hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
                 >
-                  <span className="text-xs font-semibold text-white/65">{lang === 'zh' ? '训练档案' : 'Training'}</span>
-                  <span className="flex items-end justify-between gap-2 text-base font-bold">
-                    {lang === 'zh' ? '学生页面' : 'Student'} <span aria-hidden="true">→</span>
-                  </span>
-                </Link>
-                <Link
-                  href="/forum"
-                  className="group flex min-h-24 flex-col justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] p-4 text-[#0e6f4d] transition-transform hover:-translate-y-0.5 hover:border-[#79b99a] hover:bg-[#e3f4eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
-                >
-                  <span className="text-xs font-semibold text-[#527364]">{lang === 'zh' ? '交流与约球' : 'Community'}</span>
-                  <span className="flex items-end justify-between gap-2 text-base font-bold">
-                    {lang === 'zh' ? '论坛' : 'Forum'} <span aria-hidden="true">→</span>
-                  </span>
-                </Link>
-              </div>
+                  <span>{lang === 'zh' ? '进入学生页面' : 'Open student page'}</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </form>
+              <Link
+                href="/forum"
+                className="mt-3 flex h-12 items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-[15px] font-bold text-[#0e6f4d] transition-colors hover:border-[#79b99a] hover:bg-[#e3f4eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+              >
+                <span>
+                  {lang === 'zh' ? '进入论坛' : 'Open forum'}
+                  <span className="ml-2 text-xs font-medium text-[#527364]">{lang === 'zh' ? '交流与约球' : 'Community'}</span>
+                </span>
+                <span aria-hidden="true">→</span>
+              </Link>
             </section>
 
             <section className="rounded-[8px] border border-[#dfe7dc] bg-white p-5 shadow-[0_18px_40px_-32px_rgba(18,18,18,0.28)]">
