@@ -5,15 +5,16 @@
 -- （if not exists / add column if not exists），重复跑安全。
 --
 -- 这是为了少切几次文件的合并副本；权威版本是 migrations/ 下的
--- 六个文件，改动请改那边：
+-- 七个文件，改动请改那边：
 --   2026-06-07_peer_wall.sql
 --   2026-08-01_student_messages.sql
 --   2026-08-01_forum_comments.sql
 --   2026-08-02_forum_posts.sql
 --   20260802090124_forum_profiles.sql
 --   20260802092433_forum_archive_snapshots.sql
+--   20260802101649_forum_core_features.sql（CLI 兼容的旧论坛迁移合并副本）
 --
--- 2026-08-02 探测确认：以下六块在生产库里都还不存在。
+-- 2026-08-02 探测确认：以下六个功能块在生产库里都还不存在。
 -- ============================================================
 
 
