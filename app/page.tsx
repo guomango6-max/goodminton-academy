@@ -503,18 +503,6 @@ export default function Home() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <Link
-              href="/student"
-              className="press inline-flex h-10 items-center rounded-[8px] bg-[#176a4b] px-3 text-sm font-semibold text-white lg:hidden"
-            >
-              {lang === 'zh' ? '学员' : 'Student'}
-            </Link>
-            <Link
-              href="/forum"
-              className="press inline-flex h-10 items-center rounded-[8px] border border-[#b9ddca] bg-[#edf8f2] px-3 text-sm font-semibold text-[#0e6f4d] lg:hidden"
-            >
-              {lang === 'zh' ? '论坛' : 'Forum'}
-            </Link>
             <button
               type="button"
               onClick={() => setMobileNavOpen((open) => !open)}
@@ -591,7 +579,22 @@ export default function Home() {
       </header>
 
       <main>
-        <section id="student-portal" className="mx-auto grid w-full max-w-[1180px] scroll-mt-20 gap-10 px-5 pb-10 pt-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:pb-12 lg:pt-14">
+        <nav aria-label={lang === 'zh' ? '常用入口' : 'Quick access'} className="mx-auto grid w-full max-w-[1180px] grid-cols-2 gap-3 px-5 pt-5 lg:hidden">
+          <Link
+            href="/student"
+            className="press flex min-h-16 items-center justify-between rounded-lg bg-[#176a4b] px-4 text-base font-bold text-white shadow-[0_14px_30px_-24px_rgba(18,70,49,.65)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+          >
+            {lang === 'zh' ? '学生页面' : 'Student'} <span aria-hidden="true">→</span>
+          </Link>
+          <Link
+            href="/forum"
+            className="press flex min-h-16 items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-base font-bold text-[#0e6f4d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+          >
+            {lang === 'zh' ? '论坛' : 'Forum'} <span aria-hidden="true">→</span>
+          </Link>
+        </nav>
+
+        <section id="student-portal" className="mx-auto grid w-full max-w-[1180px] scroll-mt-20 gap-10 px-5 pb-10 pt-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:pb-12 lg:pt-14">
           <div className="min-w-0">
             <h1 className="animate-fade-up max-w-[820px] text-[44px] font-medium leading-[1.05] tracking-[-0.018em] text-[#101820] sm:text-[62px]">
               {t.title}
@@ -610,7 +613,7 @@ export default function Home() {
           </div>
 
           <aside className="space-y-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-14">
-            <section className="rounded-xl border border-[#d8e6da] bg-white p-4 shadow-[0_20px_48px_-34px_rgba(18,70,49,.45)]">
+            <section className="hidden rounded-xl border border-[#d8e6da] bg-white p-4 shadow-[0_20px_48px_-34px_rgba(18,70,49,.45)] lg:block">
               <h2 className="px-1 text-lg font-semibold text-[#101820]">{lang === 'zh' ? '常用入口' : 'Quick access'}</h2>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <Link
