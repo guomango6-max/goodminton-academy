@@ -24,6 +24,7 @@ type HistoryRow = {
   featured_angle: string | null;
   featured_category: string | null;
   featured_tier: string | null;
+  featured_pinned?: boolean | null;
   coach_feedback: string | null;
   featured_excerpt: unknown;
   featured_feedback: string | null;
@@ -97,6 +98,7 @@ function rowToFeedItem(row: HistoryRow): PeerFeedItem | null {
     category,
     angle,
     tier: str(row.featured_tier),
+    ...(row.featured_pinned ? { pinned: true } : {}),
     submissionType,
     happenedAt: row.happened_at,
     excerpt,
@@ -120,14 +122,25 @@ export async function GET(req: Request) {
     return NextResponse.json({ items: [] }, { headers: NO_STORE_HEADERS });
   }
 
-  const { data, error } = await supabase
-    .from('student_history_records')
-    .select(
-      'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier, coach_feedback, featured_excerpt, featured_feedback',
-    )
-    .eq('featured', true)
-    .order('featured_at', { ascending: false, nullsFirst: false })
-    .limit(limit);
+  const BASE_COLUMNS =
+    'external_id, happened_at, record_type, title, payload, featured, featured_at, featured_angle, featured_category, featured_tier, coach_feedback, featured_excerpt, featured_feedback';
+
+  // 置顶是后加的列。先带着它查；如果这个库还没跑 2026-08-02_featured_pinned，
+  // 退回不带置顶的查询——宁可暂时没有置顶，也不能让整面墙变空。
+  const db = supabase;
+  async function fetchFeed(withPinned: boolean) {
+    let query = db
+      .from('student_history_records')
+      .select((withPinned ? `${BASE_COLUMNS}, featured_pinned` : BASE_COLUMNS) as '*')
+      .eq('featured', true);
+    if (withPinned) query = query.order('featured_pinned', { ascending: false, nullsFirst: false });
+    return query.order('featured_at', { ascending: false, nullsFirst: false }).limit(limit);
+  }
+
+  let { data, error } = await fetchFeed(true);
+  if (error && /featured_pinned/i.test(error.message || '')) {
+    ({ data, error } = await fetchFeed(false));
+  }
 
   if (error) {
     if (isMissingFeaturedColumn(error)) {

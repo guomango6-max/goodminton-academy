@@ -134,6 +134,7 @@ const copy = {
       breakthrough: '想通了',
     } as Record<string, string>,
     filterAll: '全部',
+    pinned: '加精',
     gateBrowse: '先随便看看',
     gateNeedIdentity: '留言前先选个身份',
     filters: { all: '全部', lesson: '课后总结', match: '比赛复盘', discussion: '交流讨论', meetup: '球友约球' } as Record<string, string>,
@@ -199,6 +200,7 @@ const copy = {
       breakthrough: 'Broke through',
     } as Record<string, string>,
     filterAll: 'All',
+    pinned: 'Editor’s pick',
     gateBrowse: 'Just browse for now',
     gateNeedIdentity: 'Choose an identity to comment',
     filters: { all: 'All', lesson: 'Lesson summaries', match: 'Match reviews', discussion: 'Discussion', meetup: 'Find players' } as Record<string, string>,
@@ -442,6 +444,9 @@ function HighlightCard({ item, lang, comments, identity, onNeedIdentity }: { ite
       </h3>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
+        {item.pinned ? (
+          <span className="rounded-full bg-[#fdf0d5] px-2.5 py-0.5 text-xs font-bold text-[#8a6212]">★ {t.pinned}</span>
+        ) : null}
         <span className="rounded-full bg-[#e9fbf3] px-2.5 py-0.5 text-xs font-semibold text-[#0e6f4d]">{categoryLabel}</span>
         <span className="text-xs text-[#64737a]">{tierLabel}</span>
         <span className="text-xs text-[#a3aeb4]">·</span>

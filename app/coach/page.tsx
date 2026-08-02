@@ -381,6 +381,7 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
   const [angle, setAngle] = useState('');
   const [category, setCategory] = useState('correction');
   const [tier, setTier] = useState('');
+  const [pinned, setPinned] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -415,11 +416,12 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
     try {
       await call('/api/student-submission/feature', {
         method: 'POST',
-        body: { recordId, angle: angle.trim(), category, tier: tier.trim() },
+        body: { recordId, angle: angle.trim(), category, tier: tier.trim(), pinned },
       });
       setOpenId('');
       setAngle('');
       setTier('');
+      setPinned(false);
       load();
     } catch (e) {
       onError(e instanceof Error ? e.message : '精选失败');
@@ -517,6 +519,10 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
                       这条还没有教练点评，墙上只会显示学员原文。
                     </p>
                   )}
+                  <label className="flex items-center gap-2 text-xs text-slate-600">
+                    <input type="checkbox" checked={pinned} onChange={(event) => setPinned(event.target.checked)} />
+                    加精置顶（少用——全置顶等于没置顶）
+                  </label>
                   <button type="button" disabled={busy} onClick={() => feature(submission.external_id)} className={button()}>
                     确认精选
                   </button>

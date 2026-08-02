@@ -36,6 +36,9 @@ export type PeerFeedItem = {
   category: PeerFeedCategory;
   angle: string;                             // 教练导读 / coach framing (zh, free-form)
   tier: string;                              // 'C2' / 'B1' / 'A2' / ''
+  // 加精置顶。featured = 值得放上来；pinned = 值得别人专门来看。
+  // 后者必须少，否则置顶等于没置顶。
+  pinned?: boolean;
   submissionType: PeerFeedSubmissionType;
   happenedAt: string | null;                 // date of the lesson / match
   // The coach's written reply. 点评 is a PUBLIC channel by design

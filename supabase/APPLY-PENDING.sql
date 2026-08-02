@@ -147,6 +147,18 @@ comment on column public.student_history_records.featured_feedback is
   'Anonymized public coach feedback snapshot; private coach_feedback remains unchanged.';
 
 
+-- ---------- 7. 加精置顶 ----------
+-- featured = 值得放上来；featured_pinned = 值得别人专门来看。
+-- 后者必须少，否则置顶等于没置顶。
+
+alter table public.student_history_records
+  add column if not exists featured_pinned boolean not null default false;
+
+create index if not exists student_history_records_pinned_idx
+  on public.student_history_records (featured_at desc)
+  where featured = true and featured_pinned = true;
+
+
 -- ---------- 验收 ----------
 -- 跑完后刷新学生页/论坛，三个接口的 schemaReady 应该都变成 true：
 --   GET  /api/peer-feed

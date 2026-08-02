@@ -22,6 +22,8 @@ type FeaturePayload = {
   angle?: string;
   category?: string;
   tier?: string;
+  // 加精置顶。少用——全置顶等于没置顶。
+  pinned?: boolean;
 };
 
 // Coach-wide list of recent submissions with their featured state, so the
@@ -92,18 +94,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 503 });
   }
 
-  const { error, data } = await supabase
+  const featureFields = {
+    featured: true,
+    featured_at: new Date().toISOString(),
+    featured_angle: angle,
+    featured_category: category,
+    featured_tier: tier || null,
+  };
+
+  // featured_pinned 是后加的列。库里还没跑 2026-08-02_featured_pinned 时，
+  // 退回不带置顶的写入——宁可这次没置顶，也不能让精选整个失败。
+  let { error, data } = await supabase
     .from('student_history_records')
-    .update({
-      featured: true,
-      featured_at: new Date().toISOString(),
-      featured_angle: angle,
-      featured_category: category,
-      featured_tier: tier || null,
-    })
+    .update({ ...featureFields, featured_pinned: body.pinned === true })
     .eq('external_id', recordId)
     .select('external_id')
     .maybeSingle();
+
+  if (error && /featured_pinned/i.test(error.message || '')) {
+    ({ error, data } = await supabase
+      .from('student_history_records')
+      .update(featureFields)
+      .eq('external_id', recordId)
+      .select('external_id')
+      .maybeSingle());
+  }
 
   if (error) {
     console.error('[peer-wall-feature-error]', error);
