@@ -1,15 +1,14 @@
 'use client';
 
-// 学员精华 (Student Highlights) — public wall of coach-curated student submissions.
-// Reads /api/peer-feed (same sanitized source as the student-page peer wall) and
-// falls back to demo items when the feed is empty, so the page always renders.
-// Comments are name-only + coach moderation; the demo API keeps them in memory.
+// 一个时间流，四种内容属性：课后总结 / 比赛复盘 / 交流讨论 / 球友约球。
+// 精选内容来自 /api/peer-feed，自发内容来自 /api/forum-posts；属性只用于
+// 筛选，不把规模很小的学员社区切成四个空板块。
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLang, type Lang } from '../components/LangContext';
 import ContactFooter from '../components/ContactFooter';
-import { PEER_FEED_CATEGORIES, type PeerFeedItem } from '../../lib/peer-feed-types';
+import type { PeerFeedItem } from '../../lib/peer-feed-types';
 
 type ForumComment = {
   id: string;
@@ -92,8 +91,9 @@ const copy = {
       breakthrough: '想通了',
     } as Record<string, string>,
     filterAll: '全部',
-    tabs: { lesson: '课后总结', match: '比赛复盘', discussion: '交流讨论', meetup: '球友约球' } as Record<string, string>,
-    tabHint: {
+    filters: { all: '全部', lesson: '课后总结', match: '比赛复盘', discussion: '交流讨论', meetup: '球友约球' } as Record<string, string>,
+    filterHint: {
+      all: '四种内容按发布时间混在同一条流里。',
       lesson: '教练从学员课后总结里精选，匿名展示。',
       match: '教练从比赛复盘里精选，匿名展示。',
       discussion: '学员自己发的话题。实名，发出即可见。',
@@ -147,8 +147,9 @@ const copy = {
       breakthrough: 'Broke through',
     } as Record<string, string>,
     filterAll: 'All',
-    tabs: { lesson: 'Lesson summaries', match: 'Match reviews', discussion: 'Discussion', meetup: 'Find players' } as Record<string, string>,
-    tabHint: {
+    filters: { all: 'All', lesson: 'Lesson summaries', match: 'Match reviews', discussion: 'Discussion', meetup: 'Find players' } as Record<string, string>,
+    filterHint: {
+      all: 'All four content types share one stream, ordered by publication time.',
       lesson: 'Coach-curated from student lesson summaries, shown anonymously.',
       match: 'Coach-curated from match reviews, shown anonymously.',
       discussion: 'Posted by students under their own name, visible immediately.',
@@ -410,8 +411,13 @@ type ForumPost = {
   created_at: string;
 };
 
-type TabKey = 'lesson' | 'match' | 'discussion' | 'meetup';
-const TABS: TabKey[] = ['lesson', 'match', 'discussion', 'meetup'];
+type ContentKind = 'lesson' | 'match' | 'discussion' | 'meetup';
+type ContentFilter = 'all' | ContentKind;
+const FILTERS: ContentFilter[] = ['all', 'lesson', 'match', 'discussion', 'meetup'];
+
+type FeedEntry =
+  | { source: 'curated'; kind: 'lesson' | 'match'; sortAt: string; item: PeerFeedItem }
+  | { source: 'post'; kind: 'discussion' | 'meetup'; sortAt: string; post: ForumPost };
 
 // 学员凭据存在学员页登录时写的 sessionStorage 里。发帖读它，
 // 服务端再据此解析身份——客户端传什么名字都不作数。
@@ -431,6 +437,9 @@ function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDel
   return (
     <article className="rounded-lg border border-[#e6e1d4] bg-white p-5">
       <div className="flex flex-wrap items-baseline gap-2 text-[13px] text-[#64737a]">
+        <span className="rounded-full bg-[#f2efe7] px-2.5 py-0.5 text-xs font-semibold text-[#52636b]">
+          {t.filters[post.kind]}
+        </span>
         <span className="font-semibold text-[#21242c]">{post.display_name}</span>
         <span>· {new Date(post.created_at).toLocaleDateString()}</span>
         {isMeetup && post.players_needed ? (
@@ -552,25 +561,27 @@ export default function ForumPage() {
   const [items, setItems] = useState<PeerFeedItem[]>([]);
   const [usingDemo, setUsingDemo] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  // '' = 全部。一个流 + 属性筛选，不分板块：27 人的规模撑不起多个板块，
-  // 空板块比没有板块更伤。
-  const [activeCategory, setActiveCategory] = useState('');
   const [comments, setComments] = useState<Record<string, ForumComment[]>>({});
-  const [tab, setTab] = useState<TabKey>('lesson');
+  const [activeFilter, setActiveFilter] = useState<ContentFilter>('all');
   const [posts, setPosts] = useState<ForumPost[]>([]);
+  const [postsLoaded, setPostsLoaded] = useState(false);
 
-  const curatedTab = tab === 'lesson' || tab === 'match';
-  // 总结 / 复盘 是同一批精选内容按来源分；record_type 早就在数据里。
-  const tabItems = items.filter((item) => item.submissionType === (tab === 'match' ? 'match' : 'lesson'));
-
-  // Order follows PEER_FEED_CATEGORIES so the chips do not reshuffle as the
-  // feed changes; only categories with at least one post are offered.
-  const presentCategories = PEER_FEED_CATEGORIES.filter((category) =>
-    tabItems.some((item) => item.category === category),
-  );
-  const visibleItems = activeCategory
-    ? tabItems.filter((item) => item.category === activeCategory)
-    : tabItems;
+  const feedEntries: FeedEntry[] = [
+    ...items.map((item): FeedEntry => ({
+      source: 'curated',
+      kind: item.submissionType,
+      sortAt: item.featuredAt,
+      item,
+    })),
+    ...posts.map((post): FeedEntry => ({
+      source: 'post',
+      kind: post.kind,
+      sortAt: post.created_at,
+      post,
+    })),
+  ]
+    .filter((entry) => activeFilter === 'all' || entry.kind === activeFilter)
+    .sort((left, right) => right.sortAt.localeCompare(left.sortAt));
 
   const loadPosts = useCallback(async () => {
     try {
@@ -591,6 +602,9 @@ export default function ForumPage() {
       })
       .catch(() => {
         if (active) setPosts([]);
+      })
+      .finally(() => {
+        if (active) setPostsLoaded(true);
       });
     return () => {
       active = false;
@@ -607,8 +621,6 @@ export default function ForumPage() {
     }).catch(() => null);
     void loadPosts();
   }
-
-  const tabPosts = posts.filter((post) => post.kind === tab);
 
   useEffect(() => {
     let isMounted = true;
@@ -696,83 +708,49 @@ export default function ForumPage() {
           </p>
         ) : null}
 
-        <nav className="mt-7 flex flex-wrap gap-2 border-b border-[#e6e1d4] pb-3">
-          {TABS.map((key) => {
-            const active = tab === key;
+        <nav className="mt-7 flex flex-wrap gap-2 border-b border-[#e6e1d4] pb-3" aria-label={lang === 'zh' ? '按内容属性筛选' : 'Filter by content type'}>
+          {FILTERS.map((key) => {
+            const active = activeFilter === key;
             return (
               <button
                 key={key}
                 type="button"
-                onClick={() => {
-                  setTab(key);
-                  setActiveCategory('');
-                }}
+                onClick={() => setActiveFilter(key)}
                 aria-pressed={active}
                 className={`press rounded-[8px] px-3 py-1.5 text-[15px] font-semibold transition-colors ${
                   active ? 'bg-[#e8f7f1] text-[#0e6f4d]' : 'text-[#52636b] hover:text-[#0e6f4d]'
                 }`}
               >
-                {t.tabs[key]}
+                {t.filters[key]}
               </button>
             );
           })}
         </nav>
-        <p className="cjk-wrap mt-3 text-[14px] leading-6 text-[#8a969b]">{t.tabHint[tab]}</p>
+        <p className="cjk-wrap mt-3 text-[14px] leading-6 text-[#8a969b]">{t.filterHint[activeFilter]}</p>
 
-        {!curatedTab ? (
-          <>
-            <Composer kind={tab === 'meetup' ? 'meetup' : 'discussion'} lang={lang} onPosted={loadPosts} />
-            {tabPosts.length === 0 ? (
-              <p className="cjk-wrap mt-6 rounded-md border border-[#e6e1d4] bg-[#f8f6ef] px-4 py-3 text-[15px] leading-7 text-[#52636b]">
-                {t.postsEmpty}
-              </p>
-            ) : (
-              <div className="mt-6 grid gap-4">
-                {tabPosts.map((post) => (
-                  <PostCard key={post.id} post={post} lang={lang} onDelete={deletePost} />
-                ))}
-              </div>
-            )}
-          </>
-        ) : loaded && tabItems.length === 0 ? (
+        {activeFilter === 'discussion' || activeFilter === 'meetup' ? (
+          <Composer kind={activeFilter} lang={lang} onPosted={loadPosts} />
+        ) : null}
+
+        {loaded && postsLoaded && feedEntries.length === 0 ? (
           <p className="cjk-wrap mt-8 rounded-md border border-[#e6e1d4] bg-[#f8f6ef] px-4 py-3 text-[15px] leading-7 text-[#52636b]">
-            {t.emptyNote}
+            {activeFilter === 'lesson' || activeFilter === 'match' ? t.emptyNote : t.postsEmpty}
           </p>
         ) : (
-          <>
-            {/* Chips are built from the categories actually present, so a filter
-                never leads to an empty result — the reason for not splitting
-                this into boards in the first place. Hidden below two kinds,
-                where filtering buys nothing. */}
-            {presentCategories.length > 1 ? (
-              <div className="mt-7 flex flex-wrap gap-2">
-                {['', ...presentCategories].map((value) => {
-                  const active = activeCategory === value;
-                  return (
-                    <button
-                      key={value || 'all'}
-                      type="button"
-                      onClick={() => setActiveCategory(value)}
-                      aria-pressed={active}
-                      className={`press rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors ${
-                        active
-                          ? 'border-[#14bf96] bg-[#e8f7f1] text-[#0e6f4d]'
-                          : 'border-[#e6e1d4] bg-white text-[#52636b] hover:border-[#9fb7a7]'
-                      }`}
-                    >
-                      {value ? t.category[value] || value : t.filterAll}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            <div className="mt-8 grid gap-6">
-              {visibleItems.map((item) => (
-                <HighlightCard key={item.id} item={item} lang={lang} comments={comments[item.id] || []} />
-              ))}
-            </div>
-          </>
+          <div className="mt-8 grid gap-6">
+            {feedEntries.map((entry) =>
+              entry.source === 'curated' ? (
+                <HighlightCard
+                  key={`curated:${entry.item.id}`}
+                  item={entry.item}
+                  lang={lang}
+                  comments={comments[entry.item.id] || []}
+                />
+              ) : (
+                <PostCard key={`post:${entry.post.id}`} post={entry.post} lang={lang} onDelete={deletePost} />
+              ),
+            )}
+          </div>
         )}
 
         <p className="cjk-wrap mt-10 border-t border-[#e6e1d4] pt-5 text-[13px] leading-6 text-[#8a969b]">{t.optOutNote}</p>
