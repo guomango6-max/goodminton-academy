@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import { getStudentEntry } from '@/lib/student-directory';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { staffAuthorization, writeAdminAudit } from '@/lib/admin-auth';
 
 const NO_STORE_HEADERS = {
   'cache-control': 'no-store, max-age=0',
@@ -22,12 +23,6 @@ function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function isAuthorized(req: Request, bodyToken: unknown) {
-  const expectedToken = process.env.GOODMINTON_COACH_ACTION_TOKEN;
-  const providedToken = cleanText(req.headers.get('x-goodminton-coach-token')) || cleanText(bodyToken);
-  return Boolean(expectedToken) && providedToken === expectedToken;
-}
-
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as {
     token?: string;
@@ -36,7 +31,8 @@ export async function POST(req: Request) {
     sourceExternalId?: string;
   } | null;
 
-  if (!isAuthorized(req, body?.token)) {
+  const authorization = await staffAuthorization(req, body?.token);
+  if (!authorization) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401, headers: NO_STORE_HEADERS });
   }
 
@@ -67,12 +63,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to send message.' }, { status: 502, headers: NO_STORE_HEADERS });
   }
 
+  if (authorization.kind === 'super_admin') {
+    await writeAdminAudit(authorization.userId, 'student.message.send', {
+      targetType: 'student', targetId: studentId,
+    });
+  }
+
   return NextResponse.json({ ok: true }, { headers: NO_STORE_HEADERS });
 }
 
 // Coach inbox: most recent message per student, newest thread first.
 export async function GET(req: Request) {
-  if (!isAuthorized(req, null)) {
+  if (!(await staffAuthorization(req))) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401, headers: NO_STORE_HEADERS });
   }
 

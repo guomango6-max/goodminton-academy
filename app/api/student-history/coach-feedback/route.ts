@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { staffAuthorization, writeAdminAudit } from '@/lib/admin-auth';
 
 function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
@@ -13,10 +14,8 @@ export async function POST(req: Request) {
     coachLiked?: boolean;
   } | null;
 
-  const expectedToken = process.env.GOODMINTON_COACH_ACTION_TOKEN;
-  const providedToken = cleanText(req.headers.get('x-goodminton-coach-token')) || cleanText(body?.token);
-
-  if (!expectedToken || providedToken !== expectedToken) {
+  const authorization = await staffAuthorization(req, body?.token);
+  if (!authorization) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
@@ -42,6 +41,13 @@ export async function POST(req: Request) {
   if (error) {
     console.error('[student-history-coach-feedback-error]', error);
     return NextResponse.json({ error: 'Failed to update coach feedback.' }, { status: 502 });
+  }
+
+  if (authorization.kind === 'super_admin') {
+    await writeAdminAudit(authorization.userId, 'student.feedback.update', {
+      targetType: 'student_history_record', targetId: recordId,
+      metadata: { liked: Boolean(body?.coachLiked) },
+    });
   }
 
   return NextResponse.json({ ok: true });

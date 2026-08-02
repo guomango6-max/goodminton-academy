@@ -9,6 +9,13 @@ import Link from 'next/link';
 import { useLang, type Lang } from '../components/LangContext';
 import ContactFooter from '../components/ContactFooter';
 import type { PeerFeedItem } from '../../lib/peer-feed-types';
+import { validateForumNickname } from '../../lib/forum-nickname';
+
+type ForumIdentity =
+  | { kind: 'student'; label: string }
+  | { kind: 'guest'; label: string };
+
+const FORUM_IDENTITY_KEY = 'goodminton-forum-identity';
 
 type ForumComment = {
   id: string;
@@ -249,13 +256,15 @@ function CommentSection({
   postId,
   comments,
   lang,
+  identity,
 }: {
   postId: string;
   comments: ForumComment[];
   lang: Lang;
+  identity: ForumIdentity;
 }) {
   const t = copy[lang];
-  const [name, setName] = useState('');
+  const [name, setName] = useState(identity.label);
   const [body, setBody] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -274,11 +283,17 @@ function CommentSection({
       const response = await fetch('/api/forum-comment', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ postId, name: name.trim(), body: body.trim(), website: honeypot }),
+        body: JSON.stringify({
+          postId,
+          name: name.trim(),
+          body: body.trim(),
+          website: honeypot,
+          ...(identity.kind === 'student' ? { credential: readCredential() } : {}),
+        }),
       });
       if (!response.ok) throw new Error('submit failed');
       setNotice('pending');
-      setName('');
+      setName(identity.label);
       setBody('');
     } catch {
       setNotice('error');
@@ -349,7 +364,7 @@ function CommentSection({
   );
 }
 
-function HighlightCard({ item, lang, comments }: { item: PeerFeedItem; lang: Lang; comments: ForumComment[] }) {
+function HighlightCard({ item, lang, comments, identity }: { item: PeerFeedItem; lang: Lang; comments: ForumComment[]; identity: ForumIdentity }) {
   const t = copy[lang];
   const [expanded, setExpanded] = useState(false);
 
@@ -413,7 +428,13 @@ function HighlightCard({ item, lang, comments }: { item: PeerFeedItem; lang: Lan
         </div>
       ) : null}
 
-      <CommentSection postId={item.id} comments={comments} lang={lang} />
+      <CommentSection
+        key={`${item.id}-${identity.kind}-${identity.label}`}
+        postId={item.id}
+        comments={comments}
+        lang={lang}
+        identity={identity}
+      />
     </article>
   );
 }
@@ -449,6 +470,113 @@ function readCredential() {
   } catch {
     return '';
   }
+}
+
+function ForumEntryGate({ lang, onEnter }: { lang: Lang; onEnter: (identity: ForumIdentity) => void }) {
+  const [mode, setMode] = useState<'student' | 'guest' | ''>('');
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!mode || busy) return;
+    setError('');
+
+    if (mode === 'guest') {
+      const checked = validateForumNickname(value);
+      if (checked.error) {
+        setError(checked.error);
+        return;
+      }
+      const identity: ForumIdentity = { kind: 'guest', label: checked.nickname };
+      window.sessionStorage.setItem(FORUM_IDENTITY_KEY, JSON.stringify(identity));
+      onEnter(identity);
+      return;
+    }
+
+    const credential = value.trim();
+    if (!credential) return;
+    setBusy(true);
+    try {
+      const response = await fetch('/api/student-data', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({ studentId: credential, accessCode: '' }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { student?: { name?: string }; error?: string };
+      if (!response.ok || !payload.student) throw new Error(payload.error || '学员 ID 不正确。');
+      window.sessionStorage.setItem(STUDENT_CREDENTIAL_KEY, credential);
+
+      let nickname = '';
+      const profileResponse = await fetch('/api/forum-profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      }).catch(() => null);
+      if (profileResponse?.ok) {
+        const profile = (await profileResponse.json().catch(() => ({}))) as { nickname?: string };
+        nickname = profile.nickname || '';
+      }
+
+      const identity: ForumIdentity = {
+        kind: 'student',
+        label: nickname || (lang === 'zh' ? '学员' : 'Student'),
+      };
+      window.sessionStorage.setItem(FORUM_IDENTITY_KEY, JSON.stringify(identity));
+      onEnter(identity);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : '登录失败。');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-[#10261f]/45 px-4 py-8 backdrop-blur-sm">
+      <section role="dialog" aria-modal="true" aria-labelledby="forum-entry-title" className="w-full max-w-md rounded-2xl border border-[#d9e5dc] bg-[#fffdf8] p-5 shadow-[0_28px_80px_rgba(10,36,27,.28)] sm:p-6">
+        <p className="text-xs font-bold tracking-wide text-[#16845f]">GOODMINTON FORUM</p>
+        <h1 id="forum-entry-title" className="mt-2 text-2xl font-semibold text-[#101820]">
+          {lang === 'zh' ? '你以什么身份进入？' : 'How would you like to enter?'}
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-[#64737a]">
+          {lang === 'zh' ? '学员可以发帖和留言；游客可以浏览和留言。' : 'Students can post and comment. Guests can browse and comment.'}
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <button type="button" onClick={() => { setMode('student'); setValue(''); setError(''); }} className={`min-h-20 rounded-xl border p-3 text-left ${mode === 'student' ? 'border-[#14bf96] bg-[#e8f7f1]' : 'border-[#dfe7dc] bg-white'}`}>
+            <span className="block text-base font-bold text-[#1f4a38]">{lang === 'zh' ? '我是学员' : 'Student'}</span>
+            <span className="mt-1 block text-xs text-[#64737a]">{lang === 'zh' ? '使用学员 ID' : 'Use student ID'}</span>
+          </button>
+          <button type="button" onClick={() => { setMode('guest'); setValue(''); setError(''); }} className={`min-h-20 rounded-xl border p-3 text-left ${mode === 'guest' ? 'border-[#14bf96] bg-[#e8f7f1]' : 'border-[#dfe7dc] bg-white'}`}>
+            <span className="block text-base font-bold text-[#1f4a38]">{lang === 'zh' ? '我是游客' : 'Guest'}</span>
+            <span className="mt-1 block text-xs text-[#64737a]">{lang === 'zh' ? '设置一个昵称' : 'Choose a nickname'}</span>
+          </button>
+        </div>
+        {mode ? (
+          <form onSubmit={submit} className="mt-4 space-y-3">
+            <input
+              type={mode === 'student' ? 'password' : 'text'}
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder={mode === 'student' ? (lang === 'zh' ? '学员 ID' : 'Student ID') : (lang === 'zh' ? '游客昵称（2–20 字）' : 'Guest nickname')}
+              autoComplete="off"
+              autoFocus
+              maxLength={mode === 'guest' ? 20 : 80}
+              className="h-12 w-full rounded-lg border border-[#cfe3d4] bg-white px-3 text-[15px] outline-none focus:border-[#14bf96]"
+            />
+            <button type="submit" disabled={busy || !value.trim()} className="h-12 w-full rounded-lg bg-[#0e6f4d] text-sm font-bold text-white disabled:opacity-50">
+              {busy ? (lang === 'zh' ? '验证中…' : 'Checking…') : (lang === 'zh' ? '进入论坛' : 'Enter forum')}
+            </button>
+          </form>
+        ) : null}
+        {error ? <p className="mt-3 text-sm text-[#b42318]">{error}</p> : null}
+        <Link href="/" className="mt-4 inline-block text-sm text-[#64737a] hover:text-[#1f4a38]">
+          ← {lang === 'zh' ? '返回首页' : 'Back home'}
+        </Link>
+      </section>
+    </div>
+  );
 }
 
 function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDelete: (id: string) => void }) {
@@ -669,6 +797,29 @@ export default function ForumPage() {
   const [activeFilter, setActiveFilter] = useState<ContentFilter>('all');
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [postsLoaded, setPostsLoaded] = useState(false);
+  const [identity, setIdentity] = useState<ForumIdentity | null | undefined>(undefined);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = window.sessionStorage.getItem(FORUM_IDENTITY_KEY);
+        if (!saved) {
+          setIdentity(null);
+          return;
+        }
+        const parsed = JSON.parse(saved) as ForumIdentity;
+        setIdentity(parsed?.kind === 'student' || parsed?.kind === 'guest' ? parsed : null);
+      } catch {
+        setIdentity(null);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  function switchIdentity() {
+    window.sessionStorage.removeItem(FORUM_IDENTITY_KEY);
+    setIdentity(null);
+  }
 
   const feedEntries: FeedEntry[] = [
     ...items.map((item): FeedEntry => ({
@@ -784,12 +935,18 @@ export default function ForumPage() {
 
   return (
     <div className={`min-h-screen overflow-x-hidden bg-[#fbfaf6] text-[#21242c] ${lang === 'zh' ? 'goodminton-zh' : ''}`}>
+      {identity === null ? <ForumEntryGate lang={lang} onEnter={setIdentity} /> : null}
       <header className="sticky top-0 z-40 border-b border-[#e6e1d4] bg-[#fbfaf6]/92 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[860px] items-center gap-4 px-5 py-4">
+        <div className="mx-auto flex w-full max-w-[980px] items-center gap-3 px-4 py-3 sm:gap-5 sm:px-5 sm:py-4">
           <Link href="/" className="text-[15px] font-medium text-[#121212] hover:text-[#16845f]">
             ← {t.backHome}
           </Link>
-          <span className="ml-auto text-[15px] font-medium text-[#64737a]">{t.brand}</span>
+          <span className="ml-auto hidden text-[15px] font-medium text-[#64737a] sm:inline">{t.brand}</span>
+          {identity ? (
+            <button type="button" onClick={switchIdentity} className="rounded-[8px] border border-[#b9ddca] bg-[#edf8f2] px-3 py-2 text-sm font-semibold text-[#0e6f4d] hover:bg-[#e3f4eb]">
+              {identity.label} · {lang === 'zh' ? '切换' : 'Switch'}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={toggle}
@@ -801,7 +958,7 @@ export default function ForumPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[860px] px-5 pb-16 pt-10">
+      <main className="mx-auto w-full max-w-[980px] px-4 pb-20 pt-7 sm:px-5 sm:pb-16 sm:pt-10">
         <p className="text-[13px] font-semibold text-[#16845f]">{t.kicker}</p>
         <h1 className="cjk-wrap mt-2 text-[34px] font-semibold leading-tight tracking-[-0.015em] text-[#101820]">{t.title}</h1>
         <p className="cjk-wrap mt-4 max-w-[640px] text-[16px] leading-8 text-[#52636b]">{t.desc}</p>
@@ -832,11 +989,15 @@ export default function ForumPage() {
         </nav>
         <p className="cjk-wrap mt-3 text-[14px] leading-6 text-[#8a969b]">{t.filterHint[activeFilter]}</p>
 
-        {activeFilter === 'discussion' || activeFilter === 'meetup' ? (
+        {(activeFilter === 'discussion' || activeFilter === 'meetup') && identity?.kind === 'student' ? (
           <>
             <NicknameEditor lang={lang} />
             <Composer kind={activeFilter} lang={lang} onPosted={loadPosts} />
           </>
+        ) : activeFilter === 'discussion' || activeFilter === 'meetup' ? (
+          <p className="mt-6 rounded-lg border border-[#dfe7dc] bg-[#f4f8f1] p-4 text-sm text-[#52636b]">
+            {lang === 'zh' ? '游客可以浏览和留言；发布交流或约球帖需要切换为学员身份。' : 'Guests can browse and comment. Switch to a student identity to publish discussions or meetups.'}
+          </p>
         ) : null}
 
         {loaded && postsLoaded && feedEntries.length === 0 ? (
@@ -852,6 +1013,7 @@ export default function ForumPage() {
                   item={entry.item}
                   lang={lang}
                   comments={comments[entry.item.id] || []}
+                  identity={identity || { kind: 'guest', label: lang === 'zh' ? '游客' : 'Guest' }}
                 />
               ) : (
                 <PostCard key={`post:${entry.post.id}`} post={entry.post} lang={lang} onDelete={deletePost} />

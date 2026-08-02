@@ -10,18 +10,10 @@ import { isPeerFeedCategory } from '@/lib/peer-feed-types';
 import { resolveStudentLogin } from '@/lib/student-login';
 import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { staffAuthorization, writeAdminAudit } from '@/lib/admin-auth';
 
 function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function getCoachToken(req: Request, body: { token?: string } | null) {
-  return cleanText(req.headers.get('x-goodminton-coach-token')) || cleanText(body?.token);
-}
-
-function isCoachAuthorized(provided: string) {
-  const expected = cleanText(process.env.GOODMINTON_COACH_ACTION_TOKEN);
-  return Boolean(expected) && provided === expected;
 }
 
 type FeaturePayload = {
@@ -36,7 +28,7 @@ type FeaturePayload = {
 // coach page can pick what to put on the wall. Token-gated: this is the one
 // view that pairs a student_id with their submission text.
 export async function GET(req: Request) {
-  if (!isCoachAuthorized(getCoachToken(req, null))) {
+  if (!(await staffAuthorization(req))) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
@@ -67,7 +59,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid payload.' }, { status: 400 });
   }
 
-  if (!isCoachAuthorized(getCoachToken(req, body))) {
+  const authorization = await staffAuthorization(req, body.token);
+  if (!authorization) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
 
@@ -120,6 +113,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Submission not found.' }, { status: 404 });
   }
 
+  if (authorization.kind === 'super_admin') {
+    await writeAdminAudit(authorization.userId, 'submission.feature', {
+      targetType: 'student_history_record', targetId: recordId,
+      metadata: { category, tier: tier || null },
+    });
+  }
+
   return NextResponse.json({ ok: true, recordId: data.external_id });
 }
 
@@ -148,7 +148,8 @@ export async function DELETE(req: Request) {
   }
 
   // Path A: coach token → allowed to un-feature any record.
-  if (isCoachAuthorized(getCoachToken(req, body))) {
+  const authorization = await staffAuthorization(req, body.token);
+  if (authorization) {
     const { error } = await supabase
       .from('student_history_records')
       .update({ featured: false })
@@ -157,6 +158,11 @@ export async function DELETE(req: Request) {
     if (error) {
       console.error('[peer-wall-unfeature-coach-error]', error);
       return NextResponse.json({ error: 'Failed to un-feature submission.' }, { status: 502 });
+    }
+    if (authorization.kind === 'super_admin') {
+      await writeAdminAudit(authorization.userId, 'submission.unfeature', {
+        targetType: 'student_history_record', targetId: recordId,
+      });
     }
     return NextResponse.json({ ok: true, by: 'coach' });
   }

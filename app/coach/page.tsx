@@ -71,14 +71,29 @@ function input(extra = '') {
 
 export default function CoachPage() {
   const [token, setToken] = useState('');
+  const [adminSession, setAdminSession] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [tokenDraft, setTokenDraft] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const saved = window.sessionStorage.getItem(TOKEN_KEY);
-    if (!saved) return;
-    const timer = window.setTimeout(() => setToken(saved), 0);
-    return () => window.clearTimeout(timer);
+    let active = true;
+    void fetch('/api/admin/session', { cache: 'no-store' })
+      .then((response) => response.json().then((data) => ({ response, data })))
+      .then(({ response, data }) => {
+        if (!active) return;
+        if (response.ok && data.authenticated) setAdminSession(true);
+        else setToken(window.sessionStorage.getItem(TOKEN_KEY) || '');
+      })
+      .catch(() => {
+        if (active) setToken(window.sessionStorage.getItem(TOKEN_KEY) || '');
+      })
+      .finally(() => {
+        if (active) setCheckingSession(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const call = useCallback(
@@ -87,7 +102,7 @@ export default function CoachPage() {
         method: init?.method || 'GET',
         headers: {
           'content-type': 'application/json',
-          'x-goodminton-coach-token': token,
+          ...(token ? { 'x-goodminton-coach-token': token } : {}),
         },
         cache: 'no-store',
         ...(init?.body ? { body: JSON.stringify(init.body) } : {}),
@@ -114,12 +129,28 @@ export default function CoachPage() {
     setToken('');
   }
 
-  if (!token) {
+  async function logout() {
+    if (adminSession) {
+      await fetch('/api/admin/session', { method: 'DELETE' });
+      setAdminSession(false);
+      return;
+    }
+    clearToken();
+  }
+
+  if (checkingSession) {
+    return <main className="mx-auto max-w-md px-4 py-16 text-sm text-slate-500">正在检查权限…</main>;
+  }
+
+  if (!token && !adminSession) {
     return (
       <main className="mx-auto max-w-md px-4 py-16">
         <h1 className="text-lg font-semibold text-slate-900">教练控制台</h1>
         <p className="mt-2 text-sm text-slate-600">
           输入教练令牌（Vercel 上的 <code>GOODMINTON_COACH_ACTION_TOKEN</code>）。只存在本标签页，关闭即失效。
+        </p>
+        <p className="mt-2 text-sm text-slate-500">
+          系统管理员请从 <a href="/admin" className="underline">/admin</a> 登录。
         </p>
         <form onSubmit={saveToken} className="mt-4 space-y-3">
           <input
@@ -142,7 +173,7 @@ export default function CoachPage() {
     <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       <header className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">教练控制台</h1>
-        <button type="button" onClick={clearToken} className={button()}>
+        <button type="button" onClick={logout} className={button()}>
           退出
         </button>
       </header>

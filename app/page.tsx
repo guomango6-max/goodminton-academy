@@ -243,7 +243,7 @@ const copy = {
     nav: [
       ['新闻', '#articles'],
       ['技术', '#articles'],
-      ['学员', '#student-showcase'],
+      ['学员', '/student'],
       ['教练', '#coach'],
       // 唯一一个跨页项：其余是页内锚点。/forum 在 robots.ts 里 noindex，
       // 但从这里起就是站点导航上人人可点的公开页面了。
@@ -305,7 +305,7 @@ const copy = {
     nav: [
       ['News', '#articles'],
       ['Technique', '#articles'],
-      ['Students', '#student-showcase'],
+      ['Students', '/student'],
       ['Coaches', '#coach'],
       ['Forum', '/forum'],
     ],
@@ -420,6 +420,7 @@ export default function Home() {
   const [studentLoading, setStudentLoading] = useState(false);
   const [showcaseOpen, setShowcaseOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -531,18 +532,46 @@ export default function Home() {
                 key={label}
                 href={href}
                 onClick={() => handleNavClick(href)}
-                className="transition-colors hover:text-[#121212] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14bf96]"
+                className={
+                  href === '/student'
+                    ? 'rounded-full bg-[#176a4b] px-3 py-1.5 font-semibold text-white transition-colors hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14bf96]'
+                    : href === '/forum'
+                    ? 'rounded-full border border-[#b9ddca] bg-[#edf8f2] px-3 py-1.5 font-semibold text-[#0e6f4d] transition-colors hover:border-[#79b99a] hover:bg-[#e3f4eb] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14bf96]'
+                    : 'transition-colors hover:text-[#121212] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#14bf96]'
+                }
               >
                 {label}
               </a>
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <Link
+              href="/student"
+              className="press inline-flex h-10 items-center rounded-[8px] bg-[#176a4b] px-3 text-sm font-semibold text-white lg:hidden"
+            >
+              {lang === 'zh' ? '学员' : 'Student'}
+            </Link>
+            <Link
+              href="/forum"
+              className="press inline-flex h-10 items-center rounded-[8px] border border-[#b9ddca] bg-[#edf8f2] px-3 text-sm font-semibold text-[#0e6f4d] lg:hidden"
+            >
+              {lang === 'zh' ? '论坛' : 'Forum'}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen((open) => !open)}
+              aria-expanded={mobileNavOpen}
+              aria-controls="mobile-navigation"
+              aria-label={lang === 'zh' ? '打开导航' : 'Open navigation'}
+              className="press grid h-10 w-10 place-items-center rounded-[8px] border border-[#d8d0bf] bg-white text-[#40525b] lg:hidden"
+            >
+              <span aria-hidden="true" className="text-xl leading-none">{mobileNavOpen ? '×' : '≡'}</span>
+            </button>
             <button
               type="button"
               onClick={toggle}
               aria-label={lang === 'zh' ? 'Switch to English' : '切换到中文'}
-              className="press h-10 shrink-0 rounded-[8px] border border-[#d8d0bf] bg-white px-3 text-sm font-semibold text-[#40525b] transition-colors hover:border-[#9fb7a7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+              className="press hidden h-10 shrink-0 rounded-[8px] border border-[#d8d0bf] bg-white px-3 text-sm font-semibold text-[#40525b] transition-colors hover:border-[#9fb7a7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96] lg:block"
             >
               {lang === 'zh' ? 'EN' : '中文'}
             </button>
@@ -556,6 +585,51 @@ export default function Home() {
             </a>
           </div>
         </div>
+        {mobileNavOpen ? (
+          <nav
+            id="mobile-navigation"
+            aria-label={lang === 'zh' ? '手机导航' : 'Mobile navigation'}
+            className="absolute inset-x-3 top-[calc(100%+8px)] rounded-xl border border-[#dfe7dc] bg-[#fffdf8] p-2 shadow-[0_18px_50px_rgba(31,74,56,0.18)] lg:hidden"
+          >
+            <div className="grid grid-cols-2 gap-1">
+              {t.nav.map(([label, href]) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={() => {
+                    handleNavClick(href);
+                    setMobileNavOpen(false);
+                  }}
+                  className={`rounded-lg px-4 py-3 text-sm font-semibold transition-colors ${
+                    href === '/forum'
+                      ? 'bg-[#e8f7f1] text-[#0e6f4d]'
+                      : 'text-[#40525b] hover:bg-[#f3f6ef]'
+                  }`}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+            <a
+              href="https://wa.me/358413134358"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 flex min-h-11 items-center justify-center rounded-lg bg-[#14bf96] px-4 text-sm font-semibold text-white"
+            >
+              {t.bookTraining}
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                toggle();
+                setMobileNavOpen(false);
+              }}
+              className="mt-2 flex min-h-11 w-full items-center justify-center rounded-lg border border-[#d8d0bf] bg-white px-4 text-sm font-semibold text-[#40525b] lg:hidden"
+            >
+              {lang === 'zh' ? 'Switch to English' : '切换到中文'}
+            </button>
+          </nav>
+        ) : null}
       </header>
 
       <main>
@@ -567,6 +641,26 @@ export default function Home() {
             <p className="animate-fade-up delay-1 cjk-wrap mt-6 max-w-[720px] text-[18px] leading-8 text-[#52636b]">
               <MissionText lang={lang} />
             </p>
+            <div className="animate-fade-up delay-2 mt-7 grid max-w-[680px] grid-cols-2 gap-3">
+              <Link
+                href="/student"
+                className="group rounded-xl bg-[#176a4b] p-4 text-white shadow-[0_18px_38px_-28px_rgba(14,90,64,.9)] transition-transform hover:-translate-y-0.5 sm:p-5"
+              >
+                <span className="block text-xs font-semibold text-white/70">{lang === 'zh' ? '训练档案' : 'Training profile'}</span>
+                <span className="mt-1 flex items-center justify-between text-base font-bold sm:text-lg">
+                  {lang === 'zh' ? '进入学生页面' : 'Student page'} <span aria-hidden="true">→</span>
+                </span>
+              </Link>
+              <Link
+                href="/forum"
+                className="group rounded-xl border border-[#b9ddca] bg-[#edf8f2] p-4 text-[#0e6f4d] shadow-[0_18px_38px_-30px_rgba(14,90,64,.6)] transition-transform hover:-translate-y-0.5 sm:p-5"
+              >
+                <span className="block text-xs font-semibold text-[#527364]">{lang === 'zh' ? '交流与约球' : 'Community'}</span>
+                <span className="mt-1 flex items-center justify-between text-base font-bold sm:text-lg">
+                  {lang === 'zh' ? '进入论坛' : 'Open forum'} <span aria-hidden="true">→</span>
+                </span>
+              </Link>
+            </div>
             <div className="animate-fade-up delay-2 mt-7 grid max-w-[760px] gap-3 sm:grid-cols-3">
               {t.proofPoints.map((item) => (
                 <div key={item} className="rounded-[8px] border border-[#d8e6da] bg-white/72 px-4 py-3 text-[14px] font-semibold leading-6 text-[#1f4a38] shadow-[0_14px_32px_-28px_rgba(18,18,18,0.35)]">

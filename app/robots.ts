@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
       // someone. Students wrote these expecting other students to read them,
       // not a search engine, so the page stays out of the index until that is
       // an explicit product decision.
-      disallow: ["/student", "/forum", "/coach", "/api/"],
+      disallow: ["/student", "/forum", "/coach", "/admin", "/api/"],
     },
     sitemap: `${siteUrl}/sitemap.xml`,
     host: siteUrl,

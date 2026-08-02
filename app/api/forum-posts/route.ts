@@ -11,6 +11,7 @@ import { getStudentEntry } from '@/lib/student-directory';
 import { resolveStudentLogin } from '@/lib/student-login';
 import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { staffAuthorization, writeAdminAudit } from '@/lib/admin-auth';
 
 const NO_STORE_HEADERS = { 'cache-control': 'no-store, max-age=0' };
 
@@ -29,12 +30,6 @@ function isKind(value: unknown): value is PostKind {
 function isMissingTable(error: { code?: string; message?: string } | null) {
   if (!error) return false;
   return error.code === '42P01' || error.code === 'PGRST205' || /forum_(posts|profiles)/i.test(error.message || '');
-}
-
-function coachTokenOk(req: Request, bodyToken: unknown) {
-  const expected = process.env.GOODMINTON_COACH_ACTION_TOKEN;
-  const provided = cleanText(req.headers.get('x-goodminton-coach-token'), 200) || cleanText(bodyToken, 200);
-  return Boolean(expected) && provided === expected;
 }
 
 export async function GET(req: Request) {
@@ -178,11 +173,17 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 503, headers: NO_STORE_HEADERS });
   }
 
-  if (coachTokenOk(req, body?.token)) {
+  const authorization = await staffAuthorization(req, body?.token);
+  if (authorization) {
     const { error } = await supabase.from('forum_posts').update({ hidden: true }).eq('id', id);
     if (error) {
       console.error('[forum-posts-hide-error]', error);
       return NextResponse.json({ error: 'Failed to hide post.' }, { status: 502, headers: NO_STORE_HEADERS });
+    }
+    if (authorization.kind === 'super_admin') {
+      await writeAdminAudit(authorization.userId, 'forum.post.hide', {
+        targetType: 'forum_post', targetId: id,
+      });
     }
     return NextResponse.json({ ok: true, by: 'coach' }, { headers: NO_STORE_HEADERS });
   }
