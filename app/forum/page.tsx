@@ -184,11 +184,9 @@ const copy = {
 function buildParagraphs(item: PeerFeedItem): string[] {
   const paragraphs: string[] = [];
   if (item.submissionType === 'lesson') {
-    if (item.excerpt.title) paragraphs.push(`【${item.excerpt.title}】`);
     if (item.excerpt.reflection) paragraphs.push(item.excerpt.reflection);
     if (item.excerpt.question) paragraphs.push(item.excerpt.question);
   } else {
-    if (item.excerpt.match) paragraphs.push(`${item.excerpt.match}${item.excerpt.score ? ` · ${item.excerpt.score}` : ''}`);
     if (item.excerpt.whatWorked) paragraphs.push(item.excerpt.whatWorked);
     if (item.excerpt.nextAdjustment) paragraphs.push(item.excerpt.nextAdjustment);
     if (item.excerpt.experience) paragraphs.push(item.excerpt.experience);
@@ -344,6 +342,9 @@ function HighlightCard({ item, lang, comments }: { item: PeerFeedItem; lang: Lan
   const categoryLabel = t.category[item.category] || item.category;
   const tierLabel = t.anonStudent(item.tier);
   const typeLabel = item.submissionType === 'match' ? t.typeMatch : t.typeLesson;
+  const contentTitle = item.submissionType === 'match'
+    ? [item.excerpt.match, item.excerpt.score].filter(Boolean).join(' · ')
+    : item.excerpt.title || '';
   const happenedLabel = item.happenedAt ? item.happenedAt.slice(0, 10) : item.featuredAt.slice(0, 10);
   const paragraphs = buildParagraphs(item);
   const totalChars = paragraphs.reduce((sum, p) => sum + p.length, 0);
@@ -352,13 +353,18 @@ function HighlightCard({ item, lang, comments }: { item: PeerFeedItem; lang: Lan
 
   return (
     <article className="rounded-[8px] border border-[#dfe7dc] bg-white p-5 shadow-[0_18px_40px_-32px_rgba(18,18,18,0.28)]">
-      <div className="flex flex-wrap items-center gap-2">
+      <h3 className="cjk-wrap flex flex-wrap items-center gap-2 text-[17px] font-semibold leading-7 text-[#101820]">
+        <span className="inline-flex shrink-0 rounded-md bg-[#0e6f4d] px-2.5 py-0.5 text-[13px] font-bold text-white">
+          {typeLabel}
+        </span>
+        {contentTitle ? <span>{contentTitle}</span> : null}
+      </h3>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-[#e9fbf3] px-2.5 py-0.5 text-xs font-semibold text-[#0e6f4d]">{categoryLabel}</span>
         <span className="text-xs text-[#64737a]">{tierLabel}</span>
         <span className="text-xs text-[#a3aeb4]">·</span>
         <span className="text-xs text-[#64737a]">{happenedLabel}</span>
-        <span className="text-xs text-[#a3aeb4]">·</span>
-        <span className="text-xs text-[#64737a]">{typeLabel}</span>
       </div>
 
       <div className="mt-3 rounded-md border-l-4 border-[#14bf96] bg-[#f4f8f1] px-3 py-2">
@@ -436,10 +442,14 @@ function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDel
   const isMeetup = post.kind === 'meetup';
   return (
     <article className="rounded-lg border border-[#e6e1d4] bg-white p-5">
-      <div className="flex flex-wrap items-baseline gap-2 text-[13px] text-[#64737a]">
-        <span className="rounded-full bg-[#f2efe7] px-2.5 py-0.5 text-xs font-semibold text-[#52636b]">
+      <h3 className="cjk-wrap flex flex-wrap items-center gap-2 text-[17px] font-semibold leading-7 text-[#101820]">
+        <span className="inline-flex shrink-0 rounded-md bg-[#0e6f4d] px-2.5 py-0.5 text-[13px] font-bold text-white">
           {t.filters[post.kind]}
         </span>
+        {post.title ? <span>{post.title}</span> : null}
+      </h3>
+
+      <div className="mt-2 flex flex-wrap items-baseline gap-2 text-[13px] text-[#64737a]">
         <span className="font-semibold text-[#21242c]">{post.display_name}</span>
         <span>· {new Date(post.created_at).toLocaleDateString()}</span>
         {isMeetup && post.players_needed ? (
@@ -448,8 +458,6 @@ function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDel
           </span>
         ) : null}
       </div>
-
-      {post.title ? <h3 className="cjk-wrap mt-2 text-[17px] font-semibold text-[#101820]">{post.title}</h3> : null}
 
       {isMeetup ? (
         <p className="mt-2 text-[14px] text-[#0e6f4d]">
