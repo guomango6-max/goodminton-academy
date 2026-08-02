@@ -1,4 +1,4 @@
-import { createClient, type User } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 export const ADMIN_ACCESS_COOKIE = 'gm_admin_access';
@@ -72,7 +72,7 @@ export function clearAdminSessionCookies(response: CookieResponse) {
   response.cookies.set(ADMIN_REFRESH_COOKIE, '', { ...common, path: '/api/admin/session' });
 }
 
-export async function verifySingleAdmin(accessToken: string, requireAal2 = true) {
+export async function verifySingleAdmin(accessToken: string, requireAal2 = false) {
   if (!accessToken) return null;
   const sessionClient = createSupabaseSessionClient(accessToken);
   const adminClient = createSupabaseAdminClient();
@@ -96,17 +96,13 @@ export async function verifySingleAdmin(accessToken: string, requireAal2 = true)
   return { user, aal: aalData.currentLevel, nextAal: aalData.nextLevel };
 }
 
-export function verifiedTotpFactor(user: User) {
-  return user.factors?.find((factor) => factor.factor_type === 'totp' && factor.status === 'verified') || null;
-}
-
 export async function staffAuthorization(req: Request, bodyToken?: unknown) {
   const expected = process.env.GOODMINTON_COACH_ACTION_TOKEN?.trim();
   const headerToken = req.headers.get('x-goodminton-coach-token')?.trim();
   const supplied = headerToken || (typeof bodyToken === 'string' ? bodyToken.trim() : '');
   if (expected && supplied === expected) return { kind: 'coach_token' as const, userId: null };
 
-  const admin = await verifySingleAdmin(readCookie(req, ADMIN_ACCESS_COOKIE), true);
+  const admin = await verifySingleAdmin(readCookie(req, ADMIN_ACCESS_COOKIE), false);
   return admin ? { kind: 'super_admin' as const, userId: admin.user.id } : null;
 }
 

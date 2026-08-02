@@ -6,20 +6,15 @@ import {
   createSupabaseSessionClient,
   readCookie,
   setAdminSessionCookies,
-  verifiedTotpFactor,
   verifySingleAdmin,
   writeAdminAudit,
 } from '@/lib/admin-auth';
 
 const HEADERS = { 'cache-control': 'no-store, max-age=0' };
 
-function state(user: NonNullable<Awaited<ReturnType<typeof verifySingleAdmin>>>['user'], aal: string | null) {
-  const factor = verifiedTotpFactor(user);
+function state(user: NonNullable<Awaited<ReturnType<typeof verifySingleAdmin>>>['user']) {
   return {
-    authenticated: aal === 'aal2',
-    needsMfa: aal !== 'aal2',
-    needsEnrollment: !factor,
-    factorId: factor?.id || null,
+    authenticated: true,
     email: user.email || '',
     role: 'super_admin',
   };
@@ -46,7 +41,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '这个账号不是系统管理员。' }, { status: 403, headers: HEADERS });
   }
 
-  const response = NextResponse.json(state(admin.user, admin.aal), { headers: HEADERS });
+  const response = NextResponse.json(state(admin.user), { headers: HEADERS });
   setAdminSessionCookies(response, data.session);
   await writeAdminAudit(admin.user.id, 'admin.login.password');
   return response;
@@ -74,7 +69,7 @@ export async function GET(req: Request) {
     return response;
   }
 
-  const response = NextResponse.json(state(admin.user, admin.aal), { headers: HEADERS });
+  const response = NextResponse.json(state(admin.user), { headers: HEADERS });
   if (refreshedSession) setAdminSessionCookies(response, refreshedSession);
   return response;
 }
