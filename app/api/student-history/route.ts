@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { resolveStudentLogin } from '@/lib/student-login';
+import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 type StudentLessonRecord = {
@@ -183,6 +184,19 @@ export async function POST(req: Request) {
     studentId?: string;
     accessCode?: string;
   } | null;
+
+  const rawCredential = body?.credential || `${body?.studentId || ''}${body?.accessCode || ''}`;
+  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
+    windowMs: 10 * 60 * 1000,
+    maxPerIp: 30,
+    maxPerSubject: 12,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again later.' },
+      { status: 429, headers: { 'retry-after': String(rateLimit.retryAfterSeconds) } },
+    );
+  }
 
   const { studentId } = body?.credential
     ? resolveStudentLogin(body.credential)

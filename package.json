@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test tests/request-rate-limit.test.mjs",
     "training:note": "node scripts/create-training-note.mjs",
     "training:inbox": "node scripts/create-training-note.mjs --inbox",
     "training:fetch": "node scripts/fetch-external-training-sources.mjs",
@@ -18,7 +19,11 @@
     "qa:hot": "node scripts/fetch-hot-qa-prompts.mjs",
     "qa:hot:dry": "node scripts/fetch-hot-qa-prompts.mjs --dry-run",
     "qa:hot:install-task": "powershell -ExecutionPolicy Bypass -File scripts/install-qa-prompts-task.ps1",
-    "students:check-logins": "node scripts/check-student-login-registry.mjs"
+    "students:sync": "node scripts/sync-students-from-obsidian.mjs && npm run students:check-logins",
+    "students:sync:dry": "node scripts/sync-students-from-obsidian.mjs --dry-run && node scripts/backfill-student-history-to-supabase.mjs --dry-run",
+    "students:backfill-history": "node scripts/backfill-student-history-to-supabase.mjs",
+    "students:check-logins": "node scripts/check-student-login-registry.mjs",
+    "forum:archive": "node scripts/import-forum-archive.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.58",
@@ -27,7 +32,7 @@
     "@supabase/supabase-js": "^2.106.2",
     "ai": "^6.0.174",
     "dotenv": "^17.4.2",
-    "next": "16.2.4",
+    "next": "^16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -37,8 +42,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "^16.2.12",
+    "supabase": "^2.111.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vercel": "^58.4.4"
   }
 }

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { NextResponse } from 'next/server';
 import { resolveStudentLogin } from '@/lib/student-login';
+import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 
 const NO_STORE_HEADERS = {
   'cache-control': 'no-store, no-cache, max-age=0, must-revalidate',
@@ -309,10 +310,23 @@ export async function POST(req: Request) {
     accessCode?: string;
   } | null;
 
-  const { credential, studentId } = resolveStudentLogin(body?.studentId, body?.accessCode);
+  const rawCredential = `${body?.studentId || ''}${body?.accessCode || ''}`;
+  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
+    windowMs: 10 * 60 * 1000,
+    maxPerIp: 30,
+    maxPerSubject: 12,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: '尝试次数过多，请稍后再试。' },
+      { status: 429, headers: { ...NO_STORE_HEADERS, 'retry-after': String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
+  const { studentId } = resolveStudentLogin(body?.studentId, body?.accessCode);
 
   if (!studentId) {
-    return NextResponse.json({ error: `没有找到这个学员数据。识别为：${credential || '空'}` }, { status: 404, headers: NO_STORE_HEADERS });
+    return NextResponse.json({ error: '没有找到这个学员数据。' }, { status: 404, headers: NO_STORE_HEADERS });
   }
 
   try {

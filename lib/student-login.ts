@@ -93,9 +93,17 @@ function addManifestCredentials(credentials: Record<string, string>) {
 
   for (const student of manifest) {
     if (!student.studentId) continue;
+    // Only the issued loginId (e.g. `xmj44`) is a credential.
+    //
+    // studentId (`xue-meijiao`) and alias (`xmj`) used to be registered here
+    // too, which meant the romanized name was the password — anyone who knew a
+    // student's name could open their page. Removed 2026-08-01.
+    //
+    // Every manifest entry currently carries a loginId, and the `demo` account
+    // is granted separately in data/student-login-credentials.json, so nothing
+    // loses access. Keep it that way: a new student without a loginId cannot
+    // log in at all.
     addCredential(credentials, student.loginId, student.studentId);
-    addCredential(credentials, student.studentId, student.studentId);
-    addCredential(credentials, student.alias, student.studentId);
   }
 }
 

@@ -245,6 +245,9 @@ const copy = {
       ['技术', '#articles'],
       ['学员', '#student-showcase'],
       ['教练', '#coach'],
+      // 唯一一个跨页项：其余是页内锚点。/forum 在 robots.ts 里 noindex，
+      // 但从这里起就是站点导航上人人可点的公开页面了。
+      ['论坛', '/forum'],
     ],
     bookTraining: '预约训练',
     heroKicker: '成人与青少年羽毛球训练',
@@ -304,6 +307,7 @@ const copy = {
       ['Technique', '#articles'],
       ['Students', '#student-showcase'],
       ['Coaches', '#coach'],
+      ['Forum', '/forum'],
     ],
     bookTraining: 'Book training',
     heroKicker: 'Badminton training for adults and teens',
@@ -537,7 +541,8 @@ export default function Home() {
             <button
               type="button"
               onClick={toggle}
-              className="h-10 shrink-0 rounded-[8px] border border-[#d8d0bf] bg-white px-3 text-sm font-semibold text-[#40525b] transition-colors hover:border-[#9fb7a7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+              aria-label={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+              className="press h-10 shrink-0 rounded-[8px] border border-[#d8d0bf] bg-white px-3 text-sm font-semibold text-[#40525b] transition-colors hover:border-[#9fb7a7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
             >
               {lang === 'zh' ? 'EN' : '中文'}
             </button>
