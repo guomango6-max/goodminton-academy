@@ -17,6 +17,9 @@ type ForumIdentity =
 
 const FORUM_IDENTITY_KEY = 'goodminton-forum-identity';
 
+// 自发帖没有标题时，用正文首句顶上。
+const SENTENCE_BREAK = new RegExp('[\r\n。！？!?]');
+
 // 身份存两处，是有意的：
 //   游客昵称  → localStorage。它不是凭据，忘掉它没有任何安全收益，只会让
 //              同一个人这次叫「小王」下次叫「王同学」，留言前后对不上号。
@@ -418,7 +421,57 @@ function CommentSection({
   );
 }
 
-function HighlightCard({ item, lang, comments, identity, onNeedIdentity }: { item: PeerFeedItem; lang: Lang; comments: ForumComment[]; identity: ForumIdentity | null | undefined; onNeedIdentity: () => void }) {
+// 论坛默认收起：一行一条，属性前置。19 条全展开是一堵内容墙，扫不动；
+// 收起后一屏能看完全部标题，想看哪条点哪条。
+function ThreadRow({
+  open,
+  onToggle,
+  pinned,
+  tag,
+  tagTone,
+  title,
+  meta,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  pinned?: boolean;
+  tag: string;
+  tagTone: 'curated' | 'post';
+  title: string;
+  meta: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <article className={`rounded-[8px] border bg-white ${open ? 'border-[#cfe3d4] shadow-[0_18px_40px_-32px_rgba(18,18,18,0.28)]' : 'border-[#e6e1d4]'}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-[#fbfaf6]"
+      >
+        {pinned ? (
+          <span className="mt-[3px] shrink-0 rounded bg-[#fdf0d5] px-1.5 py-0.5 text-[11px] font-bold text-[#8a6212]">★精</span>
+        ) : null}
+        <span
+          className={`mt-[3px] shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold ${
+            tagTone === 'curated' ? 'bg-[#e9fbf3] text-[#0e6f4d]' : 'bg-[#eef2f7] text-[#40525b]'
+          }`}
+        >
+          {tag}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="cjk-wrap block text-[15px] font-semibold leading-6 text-[#101820]">{title}</span>
+          <span className="mt-0.5 block text-[12px] text-[#8a969b]">{meta}</span>
+        </span>
+        <span aria-hidden="true" className="mt-1 shrink-0 text-[#a3aeb4]">{open ? '−' : '+'}</span>
+      </button>
+      {open ? <div className="border-t border-[#eee9dd] px-4 pb-4 pt-3">{children}</div> : null}
+    </article>
+  );
+}
+
+function HighlightCard({ item, lang, comments, identity, onNeedIdentity, open, onToggle }: { item: PeerFeedItem; lang: Lang; comments: ForumComment[]; identity: ForumIdentity | null | undefined; onNeedIdentity: () => void; open: boolean; onToggle: () => void }) {
   const t = copy[lang];
   const [expanded, setExpanded] = useState(false);
 
@@ -434,26 +487,22 @@ function HighlightCard({ item, lang, comments, identity, onNeedIdentity }: { ite
   const collapseLimit = 180;
   const showToggle = totalChars > collapseLimit;
 
+  // 列表标题用教练导读，不用课次标题——课次标题会重复（"回归基线复查" 三条、
+  // "封网闭合…" 两条），列出来是一排看不出差别的行；导读每条都不一样。
+  const rowTitle = item.angle;
+  const meta = [categoryLabel, tierLabel, contentTitle, happenedLabel].filter(Boolean).join(' · ');
+
   return (
-    <article className="rounded-[8px] border border-[#dfe7dc] bg-white p-5 shadow-[0_18px_40px_-32px_rgba(18,18,18,0.28)]">
-      <h3 className="cjk-wrap flex flex-wrap items-center gap-2 text-[17px] font-semibold leading-7 text-[#101820]">
-        <span className="inline-flex shrink-0 rounded-md bg-[#0e6f4d] px-2.5 py-0.5 text-[13px] font-bold text-white">
-          {typeLabel}
-        </span>
-        {contentTitle ? <span>{contentTitle}</span> : null}
-      </h3>
-
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        {item.pinned ? (
-          <span className="rounded-full bg-[#fdf0d5] px-2.5 py-0.5 text-xs font-bold text-[#8a6212]">★ {t.pinned}</span>
-        ) : null}
-        <span className="rounded-full bg-[#e9fbf3] px-2.5 py-0.5 text-xs font-semibold text-[#0e6f4d]">{categoryLabel}</span>
-        <span className="text-xs text-[#64737a]">{tierLabel}</span>
-        <span className="text-xs text-[#a3aeb4]">·</span>
-        <span className="text-xs text-[#64737a]">{happenedLabel}</span>
-      </div>
-
-      <div className="mt-3 rounded-md border-l-4 border-[#14bf96] bg-[#f4f8f1] px-3 py-2">
+    <ThreadRow
+      open={open}
+      onToggle={onToggle}
+      pinned={item.pinned}
+      tag={typeLabel}
+      tagTone="curated"
+      title={rowTitle}
+      meta={meta}
+    >
+      <div className="rounded-md border-l-4 border-[#14bf96] bg-[#f4f8f1] px-3 py-2">
         <div className="text-xs font-semibold text-[#0e6f4d]">{t.coachAngle}</div>
         <div className="cjk-wrap mt-1 text-sm leading-6 text-[#21242c]">{item.angle}</div>
       </div>
@@ -493,7 +542,7 @@ function HighlightCard({ item, lang, comments, identity, onNeedIdentity }: { ite
         identity={identity}
         onNeedIdentity={onNeedIdentity}
       />
-    </article>
+    </ThreadRow>
   );
 }
 
@@ -653,30 +702,26 @@ function ForumEntryGate({ lang, onEnter, onBrowse }: { lang: Lang; onEnter: (ide
   );
 }
 
-function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDelete: (id: string) => void }) {
+function PostCard({ post, lang, onDelete, open, onToggle }: { post: ForumPost; lang: Lang; onDelete: (id: string) => void; open: boolean; onToggle: () => void }) {
   const t = copy[lang];
   const isMeetup = post.kind === 'meetup';
+  // 自发帖有标题就用标题；没有就拿正文首句顶上，别让列表出现空行。
+  const rowTitle =
+    post.title || post.body.split(SENTENCE_BREAK)[0].slice(0, 40) || post.body.slice(0, 40);
+  const meta = [
+    post.display_name,
+    isMeetup && post.play_at ? `${t.meetupAt} ${new Date(post.play_at).toLocaleString()}` : '',
+    isMeetup && post.location ? post.location : '',
+    isMeetup && post.players_needed ? t.meetupNeed(post.players_needed) : '',
+    new Date(post.created_at).toLocaleDateString(),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <article className="rounded-lg border border-[#e6e1d4] bg-white p-5">
-      <h3 className="cjk-wrap flex flex-wrap items-center gap-2 text-[17px] font-semibold leading-7 text-[#101820]">
-        <span className="inline-flex shrink-0 rounded-md bg-[#0e6f4d] px-2.5 py-0.5 text-[13px] font-bold text-white">
-          {t.filters[post.kind]}
-        </span>
-        {post.title ? <span>{post.title}</span> : null}
-      </h3>
-
-      <div className="mt-2 flex flex-wrap items-baseline gap-2 text-[13px] text-[#64737a]">
-        <span className="font-semibold text-[#21242c]">{post.display_name}</span>
-        <span>· {new Date(post.created_at).toLocaleDateString()}</span>
-        {isMeetup && post.players_needed ? (
-          <span className="rounded bg-[#e8f7f1] px-1.5 py-0.5 font-semibold text-[#0e6f4d]">
-            {t.meetupNeed(post.players_needed)}
-          </span>
-        ) : null}
-      </div>
-
+    <ThreadRow open={open} onToggle={onToggle} tag={t.filters[post.kind]} tagTone="post" title={rowTitle} meta={meta}>
       {isMeetup ? (
-        <p className="mt-2 text-[14px] text-[#0e6f4d]">
+        <p className="text-[14px] text-[#0e6f4d]">
           {t.meetupAt}：{post.play_at ? new Date(post.play_at).toLocaleString() : ''}
           {post.location ? ` · ${post.location}` : ''}
         </p>
@@ -691,7 +736,7 @@ function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDel
       >
         {t.postDelete}
       </button>
-    </article>
+    </ThreadRow>
   );
 }
 
@@ -869,6 +914,8 @@ export default function ForumPage() {
   const [loaded, setLoaded] = useState(false);
   const [comments, setComments] = useState<Record<string, ForumComment[]>>({});
   const [activeFilter, setActiveFilter] = useState<ContentFilter>('all');
+  // 同时只展开一条：点开几条之后又变回内容墙，收起就白收了。
+  const [openId, setOpenId] = useState('');
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [postsLoaded, setPostsLoaded] = useState(false);
   const [identity, setIdentity] = useState<ForumIdentity | null | undefined>(undefined);
@@ -1074,7 +1121,7 @@ export default function ForumPage() {
             {activeFilter === 'lesson' || activeFilter === 'match' ? t.emptyNote : t.postsEmpty}
           </p>
         ) : (
-          <div className="mt-8 grid gap-6">
+          <div className="mt-6 grid gap-2">
             {feedEntries.map((entry) =>
               entry.source === 'curated' ? (
                 <HighlightCard
@@ -1084,9 +1131,20 @@ export default function ForumPage() {
                   comments={comments[entry.item.id] || []}
                   identity={identity}
                   onNeedIdentity={() => setBrowsing(false)}
+                  open={openId === `curated:${entry.item.id}`}
+                  onToggle={() =>
+                    setOpenId((current) => (current === `curated:${entry.item.id}` ? '' : `curated:${entry.item.id}`))
+                  }
                 />
               ) : (
-                <PostCard key={`post:${entry.post.id}`} post={entry.post} lang={lang} onDelete={deletePost} />
+                <PostCard
+                  key={`post:${entry.post.id}`}
+                  post={entry.post}
+                  lang={lang}
+                  onDelete={deletePost}
+                  open={openId === `post:${entry.post.id}`}
+                  onToggle={() => setOpenId((current) => (current === `post:${entry.post.id}` ? '' : `post:${entry.post.id}`))}
+                />
               ),
             )}
           </div>
