@@ -110,6 +110,13 @@ const copy = {
     composeSubmitting: '发布中…',
     composeNeedLogin: '发帖需要先在学员页登录。登录后回到这里即可。',
     composeFailed: '发布失败。',
+    nicknameLabel: '论坛昵称',
+    nicknamePlaceholder: '给自己起个昵称（2–20 字）',
+    nicknameHelp: '昵称会显示在你之后发布的交流和约球帖上。',
+    nicknameSave: '保存昵称',
+    nicknameSaved: '已保存',
+    nicknameNeedLogin: '先在学员页登录，才能设置昵称。',
+    nicknameFailed: '昵称保存失败。',
     postDelete: '删除',
     meetupAt: '开打',
     meetupNeed: (n: number) => `缺 ${n} 人`,
@@ -166,6 +173,13 @@ const copy = {
     composeSubmitting: 'Posting…',
     composeNeedLogin: 'Log in on the student page first, then come back here to post.',
     composeFailed: 'Could not post.',
+    nicknameLabel: 'Forum nickname',
+    nicknamePlaceholder: 'Choose a nickname (2–20 characters)',
+    nicknameHelp: 'Your nickname appears on discussion and meetup posts you publish after saving it.',
+    nicknameSave: 'Save nickname',
+    nicknameSaved: 'Saved',
+    nicknameNeedLogin: 'Log in on the student page before setting a nickname.',
+    nicknameFailed: 'Could not save nickname.',
     postDelete: 'Delete',
     meetupAt: 'Plays',
     meetupNeed: (n: number) => `needs ${n}`,
@@ -479,6 +493,88 @@ function PostCard({ post, lang, onDelete }: { post: ForumPost; lang: Lang; onDel
   );
 }
 
+function NicknameEditor({ lang }: { lang: Lang }) {
+  const t = copy[lang];
+  const [nickname, setNickname] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    const credential = readCredential();
+    if (!credential) return;
+    let active = true;
+    void fetch('/api/forum-profile', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    })
+      .then(async (response) => (await response.json()) as { nickname?: string })
+      .then((payload) => {
+        if (active && payload.nickname) setNickname(payload.nickname);
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const credential = readCredential();
+    if (!credential) {
+      setNotice(t.nicknameNeedLogin);
+      return;
+    }
+    if (busy || !nickname.trim()) return;
+
+    setBusy(true);
+    setNotice('');
+    try {
+      const response = await fetch('/api/forum-profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credential, nickname }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { nickname?: string; error?: string };
+      if (!response.ok) throw new Error(payload.error || t.nicknameFailed);
+      setNickname(payload.nickname || nickname.trim());
+      setNotice(t.nicknameSaved);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : t.nicknameFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="mt-6 rounded-lg border border-[#dfe7dc] bg-[#f4f8f1] p-4">
+      <label htmlFor="forum-nickname" className="text-sm font-bold text-[#1f4a38]">
+        {t.nicknameLabel}
+      </label>
+      <p className="mt-1 text-[13px] leading-5 text-[#64737a]">{t.nicknameHelp}</p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          id="forum-nickname"
+          value={nickname}
+          onChange={(event) => setNickname(event.target.value)}
+          minLength={2}
+          maxLength={20}
+          placeholder={t.nicknamePlaceholder}
+          className="h-10 min-w-0 flex-1 rounded-lg border border-[#cfe3d4] bg-white px-3 text-[15px] text-[#21242c] outline-none focus:border-[#14bf96]"
+        />
+        <button
+          type="submit"
+          disabled={busy || nickname.trim().length < 2}
+          className="press h-10 rounded-lg bg-[#0e6f4d] px-4 text-sm font-bold text-white disabled:opacity-50"
+        >
+          {busy ? t.composeSubmitting : t.nicknameSave}
+        </button>
+      </div>
+      {notice ? <p className="mt-2 text-[13px] text-[#52636b]">{notice}</p> : null}
+    </form>
+  );
+}
+
 function Composer({ kind, lang, onPosted }: { kind: 'discussion' | 'meetup'; lang: Lang; onPosted: () => void }) {
   const t = copy[lang];
   const [title, setTitle] = useState('');
@@ -737,7 +833,10 @@ export default function ForumPage() {
         <p className="cjk-wrap mt-3 text-[14px] leading-6 text-[#8a969b]">{t.filterHint[activeFilter]}</p>
 
         {activeFilter === 'discussion' || activeFilter === 'meetup' ? (
-          <Composer kind={activeFilter} lang={lang} onPosted={loadPosts} />
+          <>
+            <NicknameEditor lang={lang} />
+            <Composer kind={activeFilter} lang={lang} onPosted={loadPosts} />
+          </>
         ) : null}
 
         {loaded && postsLoaded && feedEntries.length === 0 ? (

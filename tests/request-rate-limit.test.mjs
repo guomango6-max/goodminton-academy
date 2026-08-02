@@ -5,6 +5,7 @@ import {
   checkRequestRateLimit,
   clearRequestRateLimitsForTests,
 } from '../lib/request-rate-limit.ts';
+import { normalizeForumNickname, validateForumNickname } from '../lib/forum-nickname.ts';
 
 function requestFrom(ip) {
   return new Request('https://goodminton.fi/api/test', {
@@ -40,4 +41,11 @@ test('keeps scopes independent', () => {
 
   assert.equal(checkRequestRateLimit(request, 'student-login', 'same', options).allowed, true);
   assert.equal(checkRequestRateLimit(request, 'forum-write', 'same', options).allowed, true);
+});
+
+test('normalizes nickname spacing and rejects reserved identities', () => {
+  assert.equal(normalizeForumNickname('  羽球   小白  '), '羽球 小白');
+  assert.equal(validateForumNickname('Mango Coach').error.length > 0, true);
+  assert.equal(validateForumNickname('Badminton小白').error, '');
+  assert.equal(validateForumNickname('北场小白').error, '');
 });

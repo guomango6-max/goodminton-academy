@@ -5,13 +5,14 @@
 -- （if not exists / add column if not exists），重复跑安全。
 --
 -- 这是为了少切几次文件的合并副本；权威版本是 migrations/ 下的
--- 四个文件，改动请改那边：
+-- 五个文件，改动请改那边：
 --   2026-06-07_peer_wall.sql
 --   2026-08-01_student_messages.sql
 --   2026-08-01_forum_comments.sql
 --   2026-08-02_forum_posts.sql
+--   20260802090124_forum_profiles.sql
 --
--- 2026-08-02 探测确认：以下四块在生产库里都还不存在。
+-- 2026-08-02 探测确认：以下五块在生产库里都还不存在。
 -- ============================================================
 
 
@@ -113,9 +114,28 @@ alter table public.forum_posts enable row level security;
 revoke all on public.forum_posts from anon, authenticated;
 
 
+-- ---------- 5. 学员论坛昵称 ----------
+-- 昵称绑定服务端解析出的 student_id。客户端不能替别人设置昵称，也不能
+-- 在每次发帖时临时伪造署名；旧帖子保留发布当时的署名快照。
+
+create table if not exists public.forum_profiles (
+  student_id text primary key,
+  nickname text not null check (char_length(btrim(nickname)) between 2 and 20),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists forum_profiles_nickname_unique_idx
+  on public.forum_profiles (lower(nickname));
+
+alter table public.forum_profiles enable row level security;
+revoke all on public.forum_profiles from anon, authenticated;
+
+
 -- ---------- 验收 ----------
 -- 跑完后刷新学生页/论坛，三个接口的 schemaReady 应该都变成 true：
 --   GET  /api/peer-feed
 --   GET  /api/forum-comment
 --   POST /api/student-messages   {"credential":"<某个 loginId>"}
 --   GET  /api/forum-posts
+--   POST /api/forum-profile   {"credential":"<某个 loginId>"}

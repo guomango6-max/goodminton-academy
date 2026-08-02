@@ -28,7 +28,7 @@ function isKind(value: unknown): value is PostKind {
 
 function isMissingTable(error: { code?: string; message?: string } | null) {
   if (!error) return false;
-  return error.code === '42P01' || /forum_posts/i.test(error.message || '');
+  return error.code === '42P01' || error.code === 'PGRST205' || /forum_(posts|profiles)/i.test(error.message || '');
 }
 
 function coachTokenOk(req: Request, bodyToken: unknown) {
@@ -111,12 +111,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '内容不能为空。' }, { status: 400, headers: NO_STORE_HEADERS });
   }
 
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 503, headers: NO_STORE_HEADERS });
+  }
+
   const entry = getStudentEntry(studentId);
   // 家长持有的账号发帖时署家长身份，避免让一个 8 岁孩子的名字出现在
   // 一个公开的约球贴上。
   const fallbackName =
     entry?.accountHolder === 'parent' ? `${entry.name} 的家长` : entry?.name || studentId;
-  const displayName = fallbackName;
+  const { data: profile, error: profileError } = await supabase
+    .from('forum_profiles')
+    .select('nickname')
+    .eq('student_id', studentId)
+    .maybeSingle();
+  if (profileError && !isMissingTable(profileError)) {
+    console.error('[forum-profile-read-for-post-error]', profileError);
+    return NextResponse.json({ error: '发布失败。' }, { status: 502, headers: NO_STORE_HEADERS });
+  }
+  const displayName = profile?.nickname || fallbackName;
 
   const playAtRaw = cleanText(body?.playAt, 40);
   const playAt = playAtRaw ? new Date(playAtRaw) : null;
@@ -125,11 +139,6 @@ export async function POST(req: Request) {
   }
 
   const playersNeeded = Number(body?.playersNeeded);
-
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
-    return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 503, headers: NO_STORE_HEADERS });
-  }
 
   const { error } = await supabase.from('forum_posts').insert({
     kind,
