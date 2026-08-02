@@ -76,7 +76,9 @@ export default function CoachPage() {
 
   useEffect(() => {
     const saved = window.sessionStorage.getItem(TOKEN_KEY);
-    if (saved) setToken(saved);
+    if (!saved) return;
+    const timer = window.setTimeout(() => setToken(saved), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const call = useCallback(
@@ -90,7 +92,7 @@ export default function CoachPage() {
         cache: 'no-store',
         ...(init?.body ? { body: JSON.stringify(init.body) } : {}),
       });
-      const payload = await response.json().catch(() => ({}));
+      const payload = (await response.json().catch(() => ({}))) as CallResult;
       if (!response.ok) throw new Error(payload?.error || `HTTP ${response.status}`);
       return payload;
     },
@@ -154,24 +156,32 @@ export default function CoachPage() {
   );
 }
 
-type CallFn = (url: string, init?: { method?: string; body?: unknown }) => Promise<any>;
+type CallResult = {
+  error?: string;
+  pending?: PendingComment[];
+  threads?: Thread[];
+  submissions?: Submission[];
+};
+
+type CallFn = (url: string, init?: { method?: string; body?: unknown }) => Promise<CallResult>;
 
 function CommentQueue({ call, onError }: { call: CallFn; onError: (message: string) => void }) {
   const [pending, setPending] = useState<PendingComment[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const data = await call('/api/forum-comment/moderate');
-      setPending(data.pending || []);
-    } catch (e) {
-      onError(e instanceof Error ? e.message : '加载评论队列失败');
-    }
-  }, [call, onError]);
-
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    void call('/api/forum-comment/moderate')
+      .then((data) => {
+        if (active) setPending(data.pending || []);
+      })
+      .catch((e: unknown) => {
+        if (active) onError(e instanceof Error ? e.message : '加载评论队列失败');
+      });
+    return () => {
+      active = false;
+    };
+  }, [call, onError]);
 
   async function moderate(id: string, action: 'approve' | 'reject') {
     setBusy(true);
@@ -234,8 +244,18 @@ function MessageDesk({ call, onError }: { call: CallFn; onError: (message: strin
   }, [call, onError]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    void call('/api/student-messages/send')
+      .then((data) => {
+        if (active) setThreads(data.threads || []);
+      })
+      .catch((e: unknown) => {
+        if (active) onError(e instanceof Error ? e.message : '加载私信失败');
+      });
+    return () => {
+      active = false;
+    };
+  }, [call, onError]);
 
   async function send(event: React.FormEvent) {
     event.preventDefault();
@@ -342,8 +362,18 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
   }, [call, onError]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    void call('/api/student-submission/feature')
+      .then((data) => {
+        if (active) setSubmissions(data.submissions || []);
+      })
+      .catch((e: unknown) => {
+        if (active) onError(e instanceof Error ? e.message : '加载提交失败');
+      });
+    return () => {
+      active = false;
+    };
+  }, [call, onError]);
 
   async function feature(recordId: string) {
     if (!angle.trim()) {

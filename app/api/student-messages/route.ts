@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { resolveStudentLogin } from '@/lib/student-login';
+import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 const NO_STORE_HEADERS = {
@@ -39,15 +40,27 @@ async function readCredential(req: Request) {
     | null;
   // Same convention as /api/student-history: a single `credential` string, or
   // the studentId + accessCode pair.
+  const rawCredential = body?.credential || `${body?.studentId || ''}${body?.accessCode || ''}`;
+  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
+    windowMs: 10 * 60 * 1000,
+    maxPerIp: 30,
+    maxPerSubject: 12,
+  });
   const { studentId } = body?.credential
     ? resolveStudentLogin(body.credential)
     : resolveStudentLogin(body?.studentId, body?.accessCode);
-  return { studentId, payload: body };
+  return { studentId, payload: body, rateLimit };
 }
 
 // Fetch the thread. Optionally marks coach messages as read in the same call.
 export async function POST(req: Request) {
-  const { studentId, payload } = await readCredential(req);
+  const { studentId, payload, rateLimit } = await readCredential(req);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again later.' },
+      { status: 429, headers: { ...NO_STORE_HEADERS, 'retry-after': String(rateLimit.retryAfterSeconds) } },
+    );
+  }
   if (!studentId) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401, headers: NO_STORE_HEADERS });
   }

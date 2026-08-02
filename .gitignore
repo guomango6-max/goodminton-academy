@@ -56,3 +56,7 @@ next-env.d.ts
 
 # claude code / ide config
 .claude/
+
+# local browser smoke-test profiles
+/.tmp-chrome-profile/
+/.tmp-chrome-test/

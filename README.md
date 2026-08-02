@@ -1,89 +1,92 @@
-# Goodminton Academy - AI 诊室
+# Goodminton Academy
 
-一个为羽毛球学员设计的 AI 聊天应用，帮助教练收集真实反馈并优化教学方案。
+Goodminton 的官网、学员训练档案与小型学员社区。生产站点为
+[goodminton.fi](https://goodminton.fi)，论坛入口为
+[bbs.goodminton.fi](https://bbs.goodminton.fi)（307 跳转到主域 `/forum`）。
 
-## 🚀 快速开始
+## 当前功能
 
-### 1. 获取 DeepSeek API Key
+- 官网、教练介绍、文章与 AI 羽毛球问答
+- 学员短码登录、训练重点、课后总结、比赛复盘与历史记录
+- 教练点评、匿名精选墙和审核后评论
+- 学员实名交流、约球与作者撤回
+- 教练控制台、精选管理、评论审核和教练 ↔ 学员站内消息
+- Obsidian 学员档案同步及训练资料采集脚本
 
-访问 https://platform.deepseek.com/ 注册并获取 API Key（免费）
+## 技术栈
 
-### 2. 本地开发
+- Next.js 16 App Router、React 19、TypeScript、Tailwind CSS 4
+- Supabase Postgres；浏览器不直接访问业务表，服务端 Route Handler 使用 service role
+- Vercel 部署和 DNS
 
-```bash
-# 复制环境变量文件
-cp .env.local.example .env.local
+## 本地开发
 
-# 编辑 .env.local，填入你的 DEEPSEEK_API_KEY
-# DEEPSEEK_API_KEY=sk_live_xxxxx
-
-# 安装依赖
+```powershell
 npm install
-
-# 运行开发服务器
 npm run dev
 ```
 
-访问 http://localhost:3000
+本机若遇到 Turbopack 异常，使用已提供的 Webpack 启动脚本：
 
-### 3. 部署到 Vercel
-
-1. 推送到 GitHub：
-```bash
-git add .
-git commit -m "Initial commit: Goodminton Academy AI 诊室"
-git push origin main
+```powershell
+scripts\start-local-dev.cmd
 ```
 
-2. 在 Vercel 导入项目：https://vercel.com/new
-   - 选择你的 GitHub 仓库
-   - 添加环境变量 `DEEPSEEK_API_KEY`
-   - Deploy
+提交前至少运行：
 
-## 📋 功能
+```powershell
+npm test
+npm run lint
+npm run build
+npm run students:check-logins
+```
 
-- ✅ 实时聊天（流式响应）
-- ✅ 对话保存（localStorage）
-- ✅ Notion 风格 UI
-- ✅ 完全免费（DeepSeek API）
-- ✅ 响应式设计
+`students:check-logins` 会检查 manifest、登录注册表和学员 JSON 是否一致。
 
-## 📊 如何使用
+## 主要目录
 
-### 供学员使用
-分享部署后的链接给学员。他们可以：
-- 匿名聊天（无需登录）
-- 提供真实反馈
-- 对话自动保存
+- `app/`：页面和服务端 API
+- `lib/`：登录目录、请求限流、Supabase 服务端客户端和共享类型
+- `data/`：学员 manifest、登录映射和本地演示数据
+- `supabase/migrations/`：数据库权威迁移
+- `supabase/APPLY-PENDING.sql`：论坛首次启用时可在 SQL Editor 一次执行的合并副本
+- `scripts/`：Obsidian 同步、历史回填、精选填充和内容采集
 
-### 供你收集数据
-每周日用 Claude Code 运行数据蒸馏脚本：
-- 导出所有对话
-- 分析关键洞察
-- 生成改进方案
+## 环境变量
 
-## 🛠 技术栈
+核心生产变量：
 
-- **前端**: Next.js 15 + React + Tailwind CSS
-- **API**: Vercel AI SDK + DeepSeek
-- **部署**: Vercel（免费）
-- **成本**: 完全免费（DeepSeek 免费额度）
+- `DEEPSEEK_API_KEY`：AI 问答
+- `SUPABASE_URL`（或 `NEXT_PUBLIC_SUPABASE_URL`）：Supabase 项目 URL
+- `SUPABASE_SERVICE_ROLE_KEY`：仅服务端使用，禁止加 `NEXT_PUBLIC_` 前缀
+- `GOODMINTON_COACH_ACTION_TOKEN`：保护 `/coach` 发起的写操作
 
-## 📝 System Prompt
+学员数据还可以按部署方式使用 Google Sheet、Drive 或压缩环境变量；具体变量名以
+`app/api/student-data/route.ts` 为准。不要把任何 `.env*`、令牌或 service role key 提交到 Git。
 
-AI 会以你的教练风格回应：
-- 理智、坦荡、不虚伪
-- 直言不讳的反馈
-- 重视学员的真实想法
+## 数据与安全边界
 
-## 🔄 下一步
+- 所有公开 schema 业务表均启用 RLS；应用通过服务端 service role 访问，并撤销新论坛表的
+  `anon` / `authenticated` 权限。
+- 学员身份目前仍是短登录码，不等同于高强度账户系统。接口有最低限度的进程内限流，
+  但站内消息仍只适合普通训练沟通，不应承载伤病、家庭或其他敏感信息。
+- 论坛发帖署名由服务端学员目录生成，客户端不能自定义冒用他人姓名。
+- `/student`、`/forum`、`/coach` 和 `/api/` 均不进入搜索引擎索引；robots 规则不是访问控制。
 
-1. [ ] 部署到 Vercel
-2. [ ] 发送链接给学员
-3. [ ] 每周收集反馈
-4. [ ] 月度数据蒸馏 + 改进
+## 论坛首次启用
 
----
+按顺序执行：
 
-**建议**: 在学员群里说：
-> "这是本周的 AI 诊室。你在这里的每一个想法——不爽、困惑、小突破——都会直接被我看到，用来优化下周的方案。你的真话就是我最好的研究数据。"
+1. 在 Supabase SQL Editor 审核并执行 `supabase/APPLY-PENDING.sql`。
+2. 确认公开接口的 `schemaReady` 从 `false` 变为 `true`。
+3. 在 Vercel 配置 `GOODMINTON_COACH_ACTION_TOKEN`，然后重新部署。
+4. 登录 `/coach` 验证评论审核、精选和私信。
+5. 使用 `node scripts/feature-peer-wall.mjs` 填充经确认的真实精选。
+
+迁移前页面会优雅降级为空状态；迁移执行后论坛写入立即生效，因此应先完成代码安全检查和
+学员通知。
+
+## 发布原则
+
+生产部署前确认本地分支已推送到 GitHub，避免 Vercel CLI 直部署版本与 `origin/main` 分叉。
+部署后核对首页、`/student`、`/forum`、`/coach`、公开 API 和 `bbs` 子域跳转。

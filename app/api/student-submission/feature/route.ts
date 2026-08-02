@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { isPeerFeedCategory } from '@/lib/peer-feed-types';
 import { resolveStudentLogin } from '@/lib/student-login';
+import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 function cleanText(value: unknown) {
@@ -161,6 +162,19 @@ export async function DELETE(req: Request) {
   }
 
   // Path B: student credential → allowed only on their own record.
+  const rawCredential = body.credential || `${body.studentId || ''}${body.accessCode || ''}`;
+  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
+    windowMs: 10 * 60 * 1000,
+    maxPerIp: 30,
+    maxPerSubject: 12,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again later.' },
+      { status: 429, headers: { 'retry-after': String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
   const { studentId } = body.credential
     ? resolveStudentLogin(body.credential)
     : resolveStudentLogin(body.studentId, body.accessCode);

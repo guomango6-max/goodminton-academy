@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test tests/request-rate-limit.test.mjs",
     "training:note": "node scripts/create-training-note.mjs",
     "training:inbox": "node scripts/create-training-note.mjs --inbox",
     "training:fetch": "node scripts/fetch-external-training-sources.mjs",
@@ -18,6 +19,9 @@
     "qa:hot": "node scripts/fetch-hot-qa-prompts.mjs",
     "qa:hot:dry": "node scripts/fetch-hot-qa-prompts.mjs --dry-run",
     "qa:hot:install-task": "powershell -ExecutionPolicy Bypass -File scripts/install-qa-prompts-task.ps1",
+    "students:sync": "node scripts/sync-students-from-obsidian.mjs && npm run students:check-logins",
+    "students:sync:dry": "node scripts/sync-students-from-obsidian.mjs --dry-run && node scripts/backfill-student-history-to-supabase.mjs --dry-run",
+    "students:backfill-history": "node scripts/backfill-student-history-to-supabase.mjs",
     "students:check-logins": "node scripts/check-student-login-registry.mjs"
   },
   "dependencies": {

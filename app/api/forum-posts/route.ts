@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import { getStudentEntry } from '@/lib/student-directory';
 import { resolveStudentLogin } from '@/lib/student-login';
+import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 const NO_STORE_HEADERS = { 'cache-control': 'no-store, max-age=0' };
@@ -78,6 +79,19 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
 
+  const rawCredential = body?.credential || `${body?.studentId || ''}${body?.accessCode || ''}`;
+  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
+    windowMs: 10 * 60 * 1000,
+    maxPerIp: 30,
+    maxPerSubject: 12,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: '尝试次数过多，请稍后再试。' },
+      { status: 429, headers: { ...NO_STORE_HEADERS, 'retry-after': String(rateLimit.retryAfterSeconds) } },
+    );
+  }
+
   // 身份只从凭据来，不看客户端传的 studentId / 名字。
   const { studentId } = body?.credential
     ? resolveStudentLogin(body.credential)
@@ -102,7 +116,7 @@ export async function POST(req: Request) {
   // 一个公开的约球贴上。
   const fallbackName =
     entry?.accountHolder === 'parent' ? `${entry.name} 的家长` : entry?.name || studentId;
-  const displayName = cleanText(body?.displayName, 30) || fallbackName;
+  const displayName = fallbackName;
 
   const playAtRaw = cleanText(body?.playAt, 40);
   const playAt = playAtRaw ? new Date(playAtRaw) : null;
@@ -162,6 +176,18 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Failed to hide post.' }, { status: 502, headers: NO_STORE_HEADERS });
     }
     return NextResponse.json({ ok: true, by: 'coach' }, { headers: NO_STORE_HEADERS });
+  }
+
+  const rateLimit = checkRequestRateLimit(req, 'student-credential', body?.credential, {
+    windowMs: 10 * 60 * 1000,
+    maxPerIp: 30,
+    maxPerSubject: 12,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: '尝试次数过多，请稍后再试。' },
+      { status: 429, headers: { ...NO_STORE_HEADERS, 'retry-after': String(rateLimit.retryAfterSeconds) } },
+    );
   }
 
   const { studentId } = body?.credential

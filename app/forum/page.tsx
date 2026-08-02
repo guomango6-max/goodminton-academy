@@ -583,8 +583,19 @@ export default function ForumPage() {
   }, []);
 
   useEffect(() => {
-    void loadPosts();
-  }, [loadPosts]);
+    let active = true;
+    void fetch('/api/forum-posts')
+      .then(async (response) => (await response.json()) as { posts?: ForumPost[] })
+      .then((payload) => {
+        if (active) setPosts(payload.posts || []);
+      })
+      .catch(() => {
+        if (active) setPosts([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function deletePost(id: string) {
     const credential = readCredential();
