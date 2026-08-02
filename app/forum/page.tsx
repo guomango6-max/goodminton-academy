@@ -134,6 +134,8 @@ const copy = {
       breakthrough: '想通了',
     } as Record<string, string>,
     filterAll: '全部',
+    gateBrowse: '先随便看看',
+    gateNeedIdentity: '留言前先选个身份',
     filters: { all: '全部', lesson: '课后总结', match: '比赛复盘', discussion: '交流讨论', meetup: '球友约球' } as Record<string, string>,
     filterHint: {
       all: '四种内容按发布时间混在同一条流里。',
@@ -197,6 +199,8 @@ const copy = {
       breakthrough: 'Broke through',
     } as Record<string, string>,
     filterAll: 'All',
+    gateBrowse: 'Just browse for now',
+    gateNeedIdentity: 'Choose an identity to comment',
     filters: { all: 'All', lesson: 'Lesson summaries', match: 'Match reviews', discussion: 'Discussion', meetup: 'Find players' } as Record<string, string>,
     filterHint: {
       all: 'All four content types share one stream, ordered by publication time.',
@@ -293,14 +297,16 @@ function CommentSection({
   comments,
   lang,
   identity,
+  onNeedIdentity,
 }: {
   postId: string;
   comments: ForumComment[];
   lang: Lang;
-  identity: ForumIdentity;
+  identity: ForumIdentity | null | undefined;
+  onNeedIdentity: () => void;
 }) {
   const t = copy[lang];
-  const [name, setName] = useState(identity.label);
+  const [name, setName] = useState(identity?.label || '');
   const [body, setBody] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -324,12 +330,12 @@ function CommentSection({
           name: name.trim(),
           body: body.trim(),
           website: honeypot,
-          ...(identity.kind === 'student' ? { credential: readCredential() } : {}),
+          ...(identity?.kind === 'student' ? { credential: readCredential() } : {}),
         }),
       });
       if (!response.ok) throw new Error('submit failed');
       setNotice('pending');
-      setName(identity.label);
+      setName(identity?.label || '');
       setBody('');
     } catch {
       setNotice('error');
@@ -357,6 +363,15 @@ function CommentSection({
         <p className="mt-2 text-[13px] text-[#8a969b]">{t.commentsEmpty}</p>
       )}
 
+      {!identity ? (
+        <button
+          type="button"
+          onClick={onNeedIdentity}
+          className="mt-4 w-full rounded-lg border border-[#cfe3d4] py-2.5 text-sm font-semibold text-[#0e6f4d] hover:bg-[#f2faf6]"
+        >
+          {t.gateNeedIdentity}
+        </button>
+      ) : (
       <form onSubmit={handleSubmit} className="mt-4 grid gap-2">
         {/* Honeypot: hidden from humans, bots fill it and get silently dropped. */}
         <input
@@ -396,11 +411,12 @@ function CommentSection({
           {notice === 'required' ? <p className="text-[13px] text-[#b42318]">{t.commentRequired}</p> : null}
         </div>
       </form>
+      )}
     </div>
   );
 }
 
-function HighlightCard({ item, lang, comments, identity }: { item: PeerFeedItem; lang: Lang; comments: ForumComment[]; identity: ForumIdentity }) {
+function HighlightCard({ item, lang, comments, identity, onNeedIdentity }: { item: PeerFeedItem; lang: Lang; comments: ForumComment[]; identity: ForumIdentity | null | undefined; onNeedIdentity: () => void }) {
   const t = copy[lang];
   const [expanded, setExpanded] = useState(false);
 
@@ -465,11 +481,12 @@ function HighlightCard({ item, lang, comments, identity }: { item: PeerFeedItem;
       ) : null}
 
       <CommentSection
-        key={`${item.id}-${identity.kind}-${identity.label}`}
+        key={`${item.id}-${identity?.kind || 'none'}-${identity?.label || ''}`}
         postId={item.id}
         comments={comments}
         lang={lang}
         identity={identity}
+        onNeedIdentity={onNeedIdentity}
       />
     </article>
   );
@@ -508,7 +525,7 @@ function readCredential() {
   }
 }
 
-function ForumEntryGate({ lang, onEnter }: { lang: Lang; onEnter: (identity: ForumIdentity) => void }) {
+function ForumEntryGate({ lang, onEnter, onBrowse }: { lang: Lang; onEnter: (identity: ForumIdentity) => void; onBrowse: () => void }) {
   const [mode, setMode] = useState<'student' | 'guest' | ''>('');
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
@@ -616,7 +633,14 @@ function ForumEntryGate({ lang, onEnter }: { lang: Lang; onEnter: (identity: For
           </form>
         ) : null}
         {error ? <p className="mt-3 text-sm text-[#b42318]">{error}</p> : null}
-        <Link href="/" className="mt-4 inline-block text-sm text-[#64737a] hover:text-[#1f4a38]">
+        <button
+          type="button"
+          onClick={onBrowse}
+          className="mt-4 block w-full rounded-lg border border-[#cfe3d4] py-2.5 text-center text-sm font-semibold text-[#0e6f4d] hover:bg-[#f2faf6]"
+        >
+          {copy[lang].gateBrowse}
+        </button>
+        <Link href="/" className="mt-3 inline-block text-sm text-[#64737a] hover:text-[#1f4a38]">
           ← {lang === 'zh' ? '返回首页' : 'Back home'}
         </Link>
       </section>
@@ -843,6 +867,9 @@ export default function ForumPage() {
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [postsLoaded, setPostsLoaded] = useState(false);
   const [identity, setIdentity] = useState<ForumIdentity | null | undefined>(undefined);
+  // 论坛挂在主导航上，任何人点进来都该先看到内容。身份只在「要动手」时才问：
+  // 一个想了解教练的访客，不该先被一张表单挡住。
+  const [browsing, setBrowsing] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -970,7 +997,9 @@ export default function ForumPage() {
 
   return (
     <div className={`min-h-screen overflow-x-hidden bg-[#fbfaf6] text-[#21242c] ${lang === 'zh' ? 'goodminton-zh' : ''}`}>
-      {identity === null ? <ForumEntryGate lang={lang} onEnter={setIdentity} /> : null}
+      {identity === null && !browsing ? (
+        <ForumEntryGate lang={lang} onEnter={setIdentity} onBrowse={() => setBrowsing(true)} />
+      ) : null}
       <header className="sticky top-0 z-40 border-b border-[#e6e1d4] bg-[#fbfaf6]/92 backdrop-blur">
         <div className="mx-auto flex w-full max-w-[980px] items-center gap-3 px-4 py-3 sm:gap-5 sm:px-5 sm:py-4">
           <Link href="/" className="text-[15px] font-medium text-[#121212] hover:text-[#16845f]">
@@ -1048,7 +1077,8 @@ export default function ForumPage() {
                   item={entry.item}
                   lang={lang}
                   comments={comments[entry.item.id] || []}
-                  identity={identity || { kind: 'guest', label: lang === 'zh' ? '游客' : 'Guest' }}
+                  identity={identity}
+                  onNeedIdentity={() => setBrowsing(false)}
                 />
               ) : (
                 <PostCard key={`post:${entry.post.id}`} post={entry.post} lang={lang} onDelete={deletePost} />
