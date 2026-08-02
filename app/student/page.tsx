@@ -268,6 +268,7 @@ const studentCopy = {
     messagesLoading: '加载中…',
     peerWall: '其他学员',
     peerWallDescription: '由教练精选展示，不显示真实姓名。',
+    peerWallOpenForum: '去论坛看完整内容和讨论 →',
     peerWallEmpty: '还没有教练精选的内容。',
     peerWallCoachAngle: '教练导读',
     peerWallAnonStudent: (tier: string) => (tier ? `${tier} 学员` : '学员'),
@@ -386,6 +387,7 @@ const studentCopy = {
     messagesLoading: 'Loading…',
     peerWall: 'Peers',
     peerWallDescription: 'Curated by the coach. Real names are never shown.',
+    peerWallOpenForum: 'Open the forum for full posts and discussion →',
     peerWallEmpty: 'Nothing featured by the coach yet.',
     peerWallCoachAngle: 'Coach note',
     peerWallAnonStudent: (tier: string) => (tier ? `${tier} Student` : 'A Student'),
@@ -2145,7 +2147,8 @@ function PeerWall({
   if (!items.length) {
     return (
       <div className="rounded-md border border-[#dfe7dc] bg-[#f4f8f1] p-4 text-sm text-slate-500">
-        {t.peerWallEmpty}
+        <p>{t.peerWallEmpty}</p>
+        <ForumLink label={t.peerWallOpenForum} />
       </div>
     );
   }
@@ -2164,7 +2167,22 @@ function PeerWall({
           onMarkRead={() => markRead(item.id)}
         />
       ))}
+      <ForumLink label={t.peerWallOpenForum} />
     </div>
+  );
+}
+
+// The student page shows a preview of the wall; /forum is where the full posts,
+// the coach's 点评, and the discussion live. Nothing linked there before, so
+// students had no way to find it.
+function ForumLink({ label }: { label: string }) {
+  return (
+    <Link
+      href="/forum"
+      className="mt-2 inline-block text-sm font-medium text-[#16845f] hover:text-[#0e5a40]"
+    >
+      {label}
+    </Link>
   );
 }
 
