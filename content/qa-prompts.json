@@ -1,21 +1,21 @@
 {
-  "updatedAt": "2026-05-29T06:59:35.551Z",
+  "updatedAt": "2026-05-30T05:35:03.716Z",
   "zh": [
     {
       "icon": "01",
-      "text": "双打发接发后的前三拍，业余球友最该先练哪一个选择？"
-    },
-    {
-      "icon": "02",
       "text": "AI 或训练记录能帮我看出哪些动作问题？"
     },
     {
+      "icon": "02",
+      "text": "接杀只能挡高，怎么练成挡网、抽挡和挑后场都有选择？"
+    },
+    {
       "icon": "03",
-      "text": "准备参加夏训，怎样判断课程有没有真正的反馈和进步路径？"
+      "text": "比赛领先后变保守，怎么用固定流程稳住节奏？"
     },
     {
       "icon": "04",
-      "text": "接杀只能挡高，怎么练成挡网、抽挡和挑后场都有选择？"
+      "text": "双打发接发后的前三拍，业余球友最该先练哪一个选择？"
     },
     {
       "icon": "05",
@@ -23,7 +23,7 @@
     },
     {
       "icon": "06",
-      "text": "比赛领先后变保守，怎么用固定流程稳住节奏？"
+      "text": "网前总被抢高点，放网、推扑和挑球应该怎么排序练？"
     },
     {
       "icon": "07",
@@ -31,25 +31,25 @@
     },
     {
       "icon": "08",
-      "text": "网前总被抢高点，放网、推扑和挑球应该怎么排序练？"
+      "text": "准备参加夏训，怎样判断课程有没有真正的反馈和进步路径？"
     }
   ],
   "en": [
     {
       "icon": "01",
-      "text": "In doubles, which choice after serve and return should amateur players train first?"
-    },
-    {
-      "icon": "02",
       "text": "What movement problems can AI or training notes help me notice?"
     },
     {
+      "icon": "02",
+      "text": "How can I train smash defence so I can block, drive, and lift with purpose?"
+    },
+    {
       "icon": "03",
-      "text": "How do I know whether a summer training program has real feedback and progress tracking?"
+      "text": "When I get conservative while leading, what routine can stabilize my rhythm?"
     },
     {
       "icon": "04",
-      "text": "How can I train smash defence so I can block, drive, and lift with purpose?"
+      "text": "In doubles, which choice after serve and return should amateur players train first?"
     },
     {
       "icon": "05",
@@ -57,7 +57,7 @@
     },
     {
       "icon": "06",
-      "text": "When I get conservative while leading, what routine can stabilize my rhythm?"
+      "text": "If I lose the net early, how should I sequence net shots, pushes, and lifts in training?"
     },
     {
       "icon": "07",
@@ -65,7 +65,7 @@
     },
     {
       "icon": "08",
-      "text": "If I lose the net early, how should I sequence net shots, pushes, and lifts in training?"
+      "text": "How do I know whether a summer training program has real feedback and progress tracking?"
     }
   ]
 }

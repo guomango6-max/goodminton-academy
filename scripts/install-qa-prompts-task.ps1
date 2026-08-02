@@ -1,6 +1,6 @@
 param(
   [string]$TaskName = "Goodminton QA Prompts",
-  [string]$ProjectRoot = "D:\Goodminton-website-maintenance\Goodminton-AI-academy",
+  [string]$ProjectRoot = "D:\Goodminton-website-maintenance\goodminton-academy",
   [string]$Out = "content\qa-prompts.json",
   [string]$At = "08:35"
 )

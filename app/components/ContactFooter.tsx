@@ -68,32 +68,32 @@ export default function ContactFooter({ lang = 'zh' }: { lang?: Lang }) {
   };
 
   return (
-    <footer className="relative mt-16 bg-[#07131b] py-14 text-white">
+    <footer className="relative mt-16 bg-[#07140f] py-14 text-white">
       <div className="mx-auto w-full max-w-6xl px-3 sm:px-5">
         <div className="relative mb-10 flex items-center">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-sky-200/35 to-sky-200/35" />
-          <div className="mx-4 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.3em] text-sky-100/80">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-200" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-200/35 to-emerald-200/35" />
+          <div className="mx-4 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.3em] text-emerald-100/80">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-200" />
             {t.label}
           </div>
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent via-sky-200/35 to-sky-200/35" />
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent via-emerald-200/35 to-emerald-200/35" />
         </div>
 
-        <p className="mb-8 text-center text-sm text-sky-50/70">{t.tagline}</p>
+        <p className="mb-8 text-center text-sm text-emerald-50/70">{t.tagline}</p>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <a
             href="https://wa.me/358413134358"
             target="_blank"
             rel="noopener noreferrer"
-            className="group relative overflow-hidden rounded-lg border border-sky-100/15 bg-white/8 p-5 shadow-[0_18px_44px_-28px_rgba(125,211,252,0.45)] transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-100/35 hover:bg-white/12"
+            className="group relative overflow-hidden rounded-lg border border-emerald-100/15 bg-white/8 p-5 shadow-[0_18px_44px_-28px_rgba(20,191,150,0.45)] transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-100/35 hover:bg-white/12"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100/25 bg-sky-100/10 text-sky-100">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100/25 bg-emerald-100/10 text-emerald-100">
                 <IconWhatsApp />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-sky-100/65">{t.whatsappLabel}</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-100/65">{t.whatsappLabel}</p>
                 <p className="truncate text-sm font-semibold text-white">+358 41 313 4358</p>
               </div>
             </div>
@@ -102,21 +102,21 @@ export default function ContactFooter({ lang = 'zh' }: { lang?: Lang }) {
           <button
             type="button"
             onClick={copyWeChat}
-            className="group relative overflow-hidden rounded-lg border border-sky-100/15 bg-white/8 p-5 text-left shadow-[0_18px_44px_-28px_rgba(125,211,252,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-100/35 hover:bg-white/12"
+            className="group relative overflow-hidden rounded-lg border border-emerald-100/15 bg-white/8 p-5 text-left shadow-[0_18px_44px_-28px_rgba(20,191,150,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-100/35 hover:bg-white/12"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100/20 bg-white/8 text-sky-100">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100/20 bg-white/8 text-emerald-100">
                 <IconWeChat />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-sky-100/60">{t.wechatLabel}</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-100/60">{t.wechatLabel}</p>
                 <p className="truncate font-mono text-sm font-semibold text-white">guomango</p>
               </div>
               <span
                 className={`shrink-0 rounded-md border px-2 py-1 text-[10px] font-medium tracking-wider transition-colors ${
                   copied
-                    ? 'border-sky-100/45 bg-sky-100/15 text-sky-50'
-                    : 'border-sky-100/15 bg-white/8 text-sky-100/65 group-hover:border-sky-100/30 group-hover:text-white'
+                    ? 'border-emerald-100/45 bg-emerald-100/15 text-emerald-50'
+                    : 'border-emerald-100/15 bg-white/8 text-emerald-100/65 group-hover:border-emerald-100/30 group-hover:text-white'
                 }`}
               >
                 {copied ? t.wechatCopied : t.wechatCopy}
@@ -126,21 +126,21 @@ export default function ContactFooter({ lang = 'zh' }: { lang?: Lang }) {
 
           <a
             href="mailto:guomango6@gmail.com"
-            className="group relative overflow-hidden rounded-lg border border-sky-100/15 bg-white/8 p-5 shadow-[0_18px_44px_-28px_rgba(125,211,252,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-100/35 hover:bg-white/12"
+            className="group relative overflow-hidden rounded-lg border border-emerald-100/15 bg-white/8 p-5 shadow-[0_18px_44px_-28px_rgba(20,191,150,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-100/35 hover:bg-white/12"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100/20 bg-white/8 text-sky-100">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100/20 bg-white/8 text-emerald-100">
                 <IconMail />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-sky-100/60">{t.emailLabel}</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-100/60">{t.emailLabel}</p>
                 <p className="truncate text-sm font-semibold text-white">guomango6@gmail.com</p>
               </div>
             </div>
           </a>
         </div>
 
-        <p className="mt-10 text-center text-[11px] uppercase tracking-[0.25em] text-sky-100/45">
+        <p className="mt-10 text-center text-[11px] uppercase tracking-[0.25em] text-emerald-100/45">
           © {new Date().getFullYear()} · {t.rights}
         </p>
       </div>
