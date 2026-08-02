@@ -641,26 +641,6 @@ export default function Home() {
             <p className="animate-fade-up delay-1 cjk-wrap mt-6 max-w-[720px] text-[18px] leading-8 text-[#52636b]">
               <MissionText lang={lang} />
             </p>
-            <div className="animate-fade-up delay-2 mt-7 grid max-w-[680px] grid-cols-2 gap-3">
-              <Link
-                href="/student"
-                className="group rounded-xl bg-[#176a4b] p-4 text-white shadow-[0_18px_38px_-28px_rgba(14,90,64,.9)] transition-transform hover:-translate-y-0.5 sm:p-5"
-              >
-                <span className="block text-xs font-semibold text-white/70">{lang === 'zh' ? '训练档案' : 'Training profile'}</span>
-                <span className="mt-1 flex items-center justify-between text-base font-bold sm:text-lg">
-                  {lang === 'zh' ? '进入学生页面' : 'Student page'} <span aria-hidden="true">→</span>
-                </span>
-              </Link>
-              <Link
-                href="/forum"
-                className="group rounded-xl border border-[#b9ddca] bg-[#edf8f2] p-4 text-[#0e6f4d] shadow-[0_18px_38px_-30px_rgba(14,90,64,.6)] transition-transform hover:-translate-y-0.5 sm:p-5"
-              >
-                <span className="block text-xs font-semibold text-[#527364]">{lang === 'zh' ? '交流与约球' : 'Community'}</span>
-                <span className="mt-1 flex items-center justify-between text-base font-bold sm:text-lg">
-                  {lang === 'zh' ? '进入论坛' : 'Open forum'} <span aria-hidden="true">→</span>
-                </span>
-              </Link>
-            </div>
             <div className="animate-fade-up delay-2 mt-7 grid max-w-[760px] gap-3 sm:grid-cols-3">
               {t.proofPoints.map((item) => (
                 <div key={item} className="rounded-[8px] border border-[#d8e6da] bg-white/72 px-4 py-3 text-[14px] font-semibold leading-6 text-[#1f4a38] shadow-[0_14px_32px_-28px_rgba(18,18,18,0.35)]">
@@ -669,67 +649,61 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="mt-10 border-t border-[#e0dacb] pt-10">
-              <article className="animate-fade-up delay-3 grid gap-7 lg:grid-cols-[410px_minmax(0,1fr)] lg:items-center">
-                <div className="hover-zoom relative aspect-[16/9] overflow-hidden rounded-[8px] bg-[#b9c6a3]">
-                  <Image
-                    src={featured.image}
-                    alt={t.featuredAlt}
-                    fill
-                    priority
-                    sizes="(min-width: 1024px) 410px, 100vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-[#16845f]">{featured.category}</p>
-                  <h2 className="cjk-wrap mt-4 max-w-[520px] text-[32px] font-semibold leading-tight tracking-[-0.015em] text-[#101820]">
-                    {t.featuredTitle}
-                  </h2>
-                  <p className="mt-3 text-[14px] font-semibold text-[#64737a]">{featured.date}</p>
-                  <p className="cjk-wrap mt-5 max-w-[520px] text-[16px] leading-8 text-[#52636b]">{featured.excerpt}</p>
-                  <a
-                    href="#articles"
-                    className="link-arrow press mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] border border-[#cfe8d9] bg-white px-4 text-[14px] font-semibold text-[#1f4a38] transition-colors hover:border-[#14bf96]"
-                  >
-                    {t.featuredReadMore}
-                    <span aria-hidden="true">→</span>
-                  </a>
-                </div>
-              </article>
-            </div>
           </div>
 
-          <aside className="space-y-6 lg:pt-14">
+          <aside className="space-y-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-14">
             <form
               onSubmit={handleStudentLogin}
-              className="border-t border-[#d8d0bf] pt-7"
+              className="overflow-hidden rounded-xl border border-[#d8e6da] bg-white shadow-[0_20px_48px_-34px_rgba(18,70,49,.45)]"
             >
-              <label className="block text-[13px] font-semibold text-[#40525b]">
-                <span className="sr-only">{t.studentIdLabel}</span>
-                <input
-                  value={studentId}
-                  onChange={(event) => {
-                    setStudentId(event.target.value);
-                    setStudentError('');
-                    setStudentStatus('');
-                  }}
-                  className="mt-2 h-12 w-full rounded-[8px] border border-[#cfe8d9] bg-white px-3 text-[15px] text-[#101820] outline-none transition-colors placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
-                  placeholder={t.studentIdPlaceholder}
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={studentLoading || !studentId.trim()}
-                className="mt-3 h-12 w-full rounded-[8px] bg-[#d8e8dc] px-4 text-[15px] font-semibold text-[#527364] transition-colors hover:bg-[#cbe2d3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96] disabled:cursor-not-allowed disabled:bg-[#d8e8dc] disabled:text-[#768c7d]"
-              >
-                {studentLoading ? t.loadingStudent : t.studentCta}
-              </button>
-              {studentStatus ? <p className="mt-3 text-[14px] text-[#64737a]">{studentStatus}</p> : null}
-              {studentError ? <p className="mt-3 text-[14px] text-[#b42318]">{studentError}</p> : null}
+              <div className="bg-[#176a4b] px-5 py-4 text-white">
+                <p className="text-xs font-semibold text-white/65">{lang === 'zh' ? '训练档案' : 'Training profile'}</p>
+                <h2 className="mt-1 text-xl font-semibold">{lang === 'zh' ? '学生页面' : 'Student page'}</h2>
+                <p className="mt-1 text-sm text-white/75">{t.studentDesc}</p>
+              </div>
+              <div className="p-5">
+                <label className="block text-[13px] font-semibold text-[#40525b]">
+                  <span className="sr-only">{t.studentIdLabel}</span>
+                  <input
+                    value={studentId}
+                    onChange={(event) => {
+                      setStudentId(event.target.value);
+                      setStudentError('');
+                      setStudentStatus('');
+                    }}
+                    className="h-12 w-full rounded-[8px] border border-[#cfe8d9] bg-[#fffdf8] px-3 text-[15px] text-[#101820] outline-none transition-colors placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
+                    placeholder={t.studentIdPlaceholder}
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={studentLoading || !studentId.trim()}
+                  className="mt-3 h-12 w-full rounded-[8px] bg-[#176a4b] px-4 text-[15px] font-semibold text-white transition-colors hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96] disabled:cursor-not-allowed disabled:bg-[#d8e8dc] disabled:text-[#768c7d]"
+                >
+                  {studentLoading ? t.loadingStudent : t.studentCta}
+                </button>
+                {studentStatus ? <p className="mt-3 text-[14px] text-[#64737a]">{studentStatus}</p> : null}
+                {studentError ? <p className="mt-3 text-[14px] text-[#b42318]">{studentError}</p> : null}
+
+                <div className="my-5 flex items-center gap-3 text-xs text-[#8a969b]">
+                  <span className="h-px flex-1 bg-[#e6e1d4]" />
+                  <span>{lang === 'zh' ? '交流社区' : 'Community'}</span>
+                  <span className="h-px flex-1 bg-[#e6e1d4]" />
+                </div>
+                <Link
+                  href="/forum"
+                  className="flex min-h-12 items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-sm font-semibold text-[#0e6f4d] transition-colors hover:border-[#79b99a] hover:bg-[#e3f4eb]"
+                >
+                  <span>
+                    <span className="block text-base">{lang === 'zh' ? '论坛' : 'Forum'}</span>
+                    <span className="mt-0.5 block text-xs font-medium text-[#527364]">{lang === 'zh' ? '交流、复盘和约球' : 'Talk, review, and find games'}</span>
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
             </form>
 
             <section className="rounded-[8px] border border-[#dfe7dc] bg-white p-5 shadow-[0_18px_40px_-32px_rgba(18,18,18,0.28)]">
@@ -750,6 +724,36 @@ export default function Home() {
               </div>
             </section>
           </aside>
+
+          <div className="mt-2 border-t border-[#e0dacb] pt-10 lg:col-start-1 lg:row-start-2 lg:mt-0">
+            <article className="animate-fade-up delay-3 grid gap-7 lg:grid-cols-[410px_minmax(0,1fr)] lg:items-center">
+              <div className="hover-zoom relative aspect-[16/9] overflow-hidden rounded-[8px] bg-[#b9c6a3]">
+                <Image
+                  src={featured.image}
+                  alt={t.featuredAlt}
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 410px, 100vw"
+                  className="object-cover"
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-[#16845f]">{featured.category}</p>
+                <h2 className="cjk-wrap mt-4 max-w-[520px] text-[32px] font-semibold leading-tight tracking-[-0.015em] text-[#101820]">
+                  {t.featuredTitle}
+                </h2>
+                <p className="mt-3 text-[14px] font-semibold text-[#64737a]">{featured.date}</p>
+                <p className="cjk-wrap mt-5 max-w-[520px] text-[16px] leading-8 text-[#52636b]">{featured.excerpt}</p>
+                <a
+                  href="#articles"
+                  className="link-arrow press mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] border border-[#cfe8d9] bg-white px-4 text-[14px] font-semibold text-[#1f4a38] transition-colors hover:border-[#14bf96]"
+                >
+                  {t.featuredReadMore}
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </article>
+          </div>
         </section>
 
         <section id="articles" className="border-y border-[#e6e1d4] bg-white/55 pb-20 pt-8">
