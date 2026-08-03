@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ContactFooter from './components/ContactFooter';
@@ -415,7 +415,18 @@ export default function Home() {
   const [showcaseOpen, setShowcaseOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [forumEntryOpen, setForumEntryOpen] = useState(false);
+  const [homeCredential, setHomeCredential] = useState('');
+
+  function openStudentPage() {
+    const credential = homeCredential.trim();
+    if (!credential) {
+      setForumLoginError(lang === 'zh' ? '请先输入学员 ID。' : 'Enter your student ID first.');
+      return;
+    }
+    const params = new URLSearchParams({ credential });
+    if (lang === 'en') params.set('lang', 'en');
+    window.location.assign(`/student?${params.toString()}`);
+  }
   const [forumLoginBusy, setForumLoginBusy] = useState(false);
   const [forumLoginError, setForumLoginError] = useState('');
 
@@ -479,13 +490,14 @@ export default function Home() {
     }
   }
 
-  async function handleForumStudentLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleForumStudentLogin(rawCredential: string) {
     if (forumLoginBusy) return;
 
-    const form = new FormData(event.currentTarget);
-    const credential = String(form.get('forumCredential') || '').trim();
-    if (!credential) return;
+    const credential = rawCredential.trim();
+    if (!credential) {
+      setForumLoginError(lang === 'zh' ? '请先输入学员 ID。' : 'Enter your student ID first.');
+      return;
+    }
 
     setForumLoginBusy(true);
     setForumLoginError('');
@@ -656,78 +668,57 @@ export default function Home() {
           </div>
 
           <aside className="space-y-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-14">
+            {/* 一个身份，两个去向。此前学生页和论坛各有一个学员 ID 输入框，
+                同一个 ID 要按去哪儿输两遍——合并成先填身份、再选目的地。 */}
             <section className="hidden rounded-xl border border-[#d8e6da] bg-white p-4 shadow-[0_20px_48px_-34px_rgba(18,70,49,.45)] lg:block">
-              <form action="/student" method="get">
-                <label className="sr-only" htmlFor="home-student-id">{t.studentIdLabel}</label>
-                <input
-                  id="home-student-id"
-                  name="credential"
-                  required
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  placeholder={t.studentIdPlaceholder}
-                  className="h-12 w-full rounded-lg border border-[#cfe0d4] bg-[#fffdf8] px-4 text-[15px] text-[#101820] outline-none placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
-                />
-                {lang === 'en' ? <input type="hidden" name="lang" value="en" /> : null}
-                <button
-                  type="submit"
-                  className="mt-3 flex h-12 w-full items-center justify-between rounded-lg bg-[#176a4b] px-4 text-[15px] font-bold text-white transition-colors hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+              <label className="sr-only" htmlFor="home-student-id">{t.studentIdLabel}</label>
+              <input
+                id="home-student-id"
+                value={homeCredential}
+                onChange={(event) => {
+                  setHomeCredential(event.target.value);
+                  setForumLoginError('');
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') openStudentPage();
+                }}
+                type="text"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder={t.studentIdPlaceholder}
+                className="h-12 w-full rounded-lg border border-[#cfe0d4] bg-[#fffdf8] px-4 text-[15px] text-[#101820] outline-none placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
+              />
+
+              <button
+                type="button"
+                onClick={openStudentPage}
+                className="mt-3 flex h-12 w-full items-center justify-between rounded-lg bg-[#176a4b] px-4 text-[15px] font-bold text-white transition-colors hover:bg-[#0e5a40] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+              >
+                <span>{lang === 'zh' ? '进入学生页面' : 'Open student page'}</span>
+                <span aria-hidden="true">→</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={forumLoginBusy}
+                onClick={() => handleForumStudentLogin(homeCredential)}
+                className="mt-2 flex h-12 w-full items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-[15px] font-bold text-[#0e6f4d] transition-colors hover:bg-[#e3f4eb] disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
+              >
+                <span>{forumLoginBusy ? (lang === 'zh' ? '验证中…' : 'Checking…') : (lang === 'zh' ? '进入论坛' : 'Open forum')}</span>
+                <span aria-hidden="true">→</span>
+              </button>
+
+              {forumLoginError ? <p className="mt-2 text-sm text-[#b42318]">{forumLoginError}</p> : null}
+
+              <div className="mt-4 border-t border-[#e1e9e2] pt-3">
+                <Link
+                  href="/forum?entry=guest"
+                  onClick={() => window.sessionStorage.removeItem('goodminton-forum-identity')}
+                  className="text-[14px] font-semibold text-[#0e6f4d] hover:underline"
                 >
-                  <span>{lang === 'zh' ? '进入学生页面' : 'Open student page'}</span>
-                  <span aria-hidden="true">→</span>
-                </button>
-              </form>
-              <div className="mt-4 border-t border-[#e1e9e2] pt-4">
-                <button
-                  type="button"
-                  aria-expanded={forumEntryOpen}
-                  aria-controls="home-forum-entry"
-                  onClick={() => setForumEntryOpen((open) => !open)}
-                  className="flex h-11 w-full items-center justify-between rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-4 text-[15px] font-bold text-[#0e6f4d] transition-colors hover:bg-[#e3f4eb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14bf96]"
-                >
-                  <span>{lang === 'zh' ? '论坛' : 'Forum'}</span>
-                  <span aria-hidden="true" className="text-lg">{forumEntryOpen ? '−' : '+'}</span>
-                </button>
-                {forumEntryOpen ? (
-                  <div id="home-forum-entry" className="pt-3">
-                    <form onSubmit={handleForumStudentLogin}>
-                      <label className="sr-only" htmlFor="home-forum-student-id">{t.studentIdLabel}</label>
-                      {/* 学员 ID 明文显示：遮蔽会让打错看不见，而它只是一个
-                          五位左右的短码，学员多在手机上输入。登录侧做了
-                          toLowerCase 归一，键盘自动大写不会导致登录失败。 */}
-                      <input
-                        id="home-forum-student-id"
-                        name="forumCredential"
-                        required
-                        type="text"
-                        autoComplete="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        placeholder={lang === 'zh' ? '输入学员 ID' : 'Enter student ID'}
-                        onChange={() => setForumLoginError('')}
-                        className="h-12 w-full rounded-lg border border-[#cfe0d4] bg-[#fffdf8] px-4 text-[15px] text-[#101820] outline-none placeholder:text-[#8a969b] focus:border-[#14bf96] focus:ring-2 focus:ring-[#14bf96]/20"
-                      />
-                      <div className="mt-3 grid grid-cols-2 gap-3">
-                        <button
-                          type="submit"
-                          disabled={forumLoginBusy}
-                          className="h-11 rounded-lg bg-[#176a4b] px-3 text-sm font-bold text-white transition-colors hover:bg-[#0e5a40] disabled:opacity-60"
-                        >
-                          {forumLoginBusy ? (lang === 'zh' ? '验证中…' : 'Checking…') : (lang === 'zh' ? '学员进入' : 'Student entry')}
-                        </button>
-                        <Link
-                          href="/forum?entry=guest"
-                          onClick={() => window.sessionStorage.removeItem('goodminton-forum-identity')}
-                          className="flex h-11 items-center justify-center rounded-lg border border-[#b9ddca] bg-[#edf8f2] px-3 text-sm font-bold text-[#0e6f4d] transition-colors hover:bg-[#e3f4eb]"
-                        >
-                          {lang === 'zh' ? '游客访问' : 'Guest access'}
-                        </Link>
-                      </div>
-                    </form>
-                    {forumLoginError ? <p className="mt-2 text-sm text-[#b42318]">{forumLoginError}</p> : null}
-                  </div>
-                ) : null}
+                  {lang === 'zh' ? '没有 ID？以游客身份逛论坛 →' : 'No ID? Browse the forum as a guest →'}
+                </Link>
               </div>
             </section>
 
