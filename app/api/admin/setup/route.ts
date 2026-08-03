@@ -45,7 +45,6 @@ export async function POST(req: Request) {
   const rateLimit = checkRequestRateLimit(req, 'admin-bootstrap', email || 'unknown', {
     windowMs: 15 * 60 * 1000,
     maxPerIp: 10,
-    maxPerSubject: 6,
   });
   if (!rateLimit.allowed) {
     return NextResponse.json(

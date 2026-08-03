@@ -17,7 +17,6 @@ globalThis.__goodmintonRateLimitStore = store;
 type RateLimitOptions = {
   windowMs: number;
   maxPerIp: number;
-  maxPerSubject?: number;
 };
 
 export type RateLimitResult = {
@@ -55,26 +54,22 @@ function consume(key: string, max: number, windowMs: number, now: number): RateL
 export function checkRequestRateLimit(
   req: Request,
   scope: string,
-  subject: unknown,
+  _subject: unknown,
   options: RateLimitOptions,
 ): RateLimitResult {
-  const now = Date.now();
-  const ipResult = consume(
+  // 只按 IP 限流。
+  //
+  // 这里曾经还有一个按 subject（凭据字符串）的全局桶，2026-08-02 移除，因为
+  // 它做不到想做的事，却做成了想避免的事：
+  //   猜错的人每次输的是不同字符串，各自落进各自的桶，永远不会触顶；
+  //   真正被计数打满的只有输对码的那个人——也就是学员本人。
+  // 实际后果是一名学员被挡在门外，而任何知道某人登录码的人发满 12 次就能
+  // 复现这个效果。按 IP 限流才是防扫号的那一层。
+  return consume(
     `${scope}:ip:${fingerprint(clientAddress(req))}`,
     options.maxPerIp,
     options.windowMs,
-    now,
-  );
-  if (!ipResult.allowed) return ipResult;
-
-  const normalizedSubject = typeof subject === 'string' ? subject.trim().toLowerCase() : '';
-  if (!normalizedSubject || !options.maxPerSubject) return ipResult;
-
-  return consume(
-    `${scope}:subject:${fingerprint(normalizedSubject)}`,
-    options.maxPerSubject,
-    options.windowMs,
-    now,
+    Date.now(),
   );
 }
 

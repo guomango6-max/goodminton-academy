@@ -187,7 +187,6 @@ export async function DELETE(req: Request) {
   const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
     windowMs: 10 * 60 * 1000,
     maxPerIp: 30,
-    maxPerSubject: 12,
   });
   if (!rateLimit.allowed) {
     return NextResponse.json(
