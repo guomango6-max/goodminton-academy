@@ -29,11 +29,15 @@ test('limits repeated attempts from one IP even when subjects change', () => {
   assert.ok(blocked.retryAfterSeconds > 0);
 });
 
-test('limits one credential across different IP addresses', () => {
-  const options = { windowMs: 60_000, maxPerIp: 10, maxPerSubject: 1 };
+// 这条断言原本是反过来的：同一凭据跨 IP 也要被拦。那个行为在
+// 「移除按凭据的全局限流」里删掉了，理由见 lib/request-rate-limit.ts 的注释——
+// 按凭据计数拦不住猜码的人（每次输的字符串都不同），只拦得住输对码的本人。
+// 测试当时漏改，于是它一直在断言一个已经被判定为 bug 的行为。
+test('does not lock one credential out across different IP addresses', () => {
+  const options = { windowMs: 60_000, maxPerIp: 10 };
 
   assert.equal(checkRequestRateLimit(requestFrom('203.0.113.1'), 'login', 'xmj44', options).allowed, true);
-  assert.equal(checkRequestRateLimit(requestFrom('203.0.113.2'), 'login', 'xmj44', options).allowed, false);
+  assert.equal(checkRequestRateLimit(requestFrom('203.0.113.2'), 'login', 'xmj44', options).allowed, true);
 });
 
 test('keeps scopes independent', () => {
