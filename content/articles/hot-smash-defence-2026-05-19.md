@@ -11,7 +11,7 @@ enDate: May 19, 2026
 zhCategory: 接杀防守
 enCategory: Smash defence
 zhExcerpt: 今天的相关来源集中在r/badminton、Shuttle Smash。适合整理成训练目标、课堂口令和课后复盘动作。
-enExcerpt: Today sources cluster around r/badminton、Shuttle Smash. Turn it into training goals, coach cues, and review actions.
+enExcerpt: Today sources cluster around r/badminton, Shuttle Smash. Turn it into training goals, coach cues, and review actions.
 ---
 
 自动抓取来源：

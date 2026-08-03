@@ -11,7 +11,7 @@ enDate: May 23, 2026
 zhCategory: AI训练
 enCategory: AI coaching
 zhExcerpt: 今天的相关来源集中在r/badminton、BadminSense / arXiv。适合整理成训练目标、课堂口令和课后复盘动作。
-enExcerpt: Today sources cluster around r/badminton、BadminSense / arXiv. Turn it into training goals, coach cues, and review actions.
+enExcerpt: Today sources cluster around r/badminton, BadminSense / arXiv. Turn it into training goals, coach cues, and review actions.
 ---
 
 自动抓取来源：

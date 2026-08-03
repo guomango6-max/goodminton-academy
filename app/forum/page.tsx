@@ -432,6 +432,7 @@ function ThreadRow({
   open,
   onToggle,
   pinned,
+  pinnedLabel,
   tag,
   tagTone,
   title,
@@ -441,6 +442,7 @@ function ThreadRow({
   open: boolean;
   onToggle: () => void;
   pinned?: boolean;
+  pinnedLabel: string;
   tag: string;
   tagTone: 'curated' | 'post';
   title: string;
@@ -456,7 +458,7 @@ function ThreadRow({
         className="flex w-full items-start gap-2 px-4 py-3 text-left hover:bg-[#fbfaf6]"
       >
         {pinned ? (
-          <span className="mt-[3px] shrink-0 rounded bg-[#fdf0d5] px-1.5 py-0.5 text-[11px] font-bold text-[#8a6212]">★精</span>
+          <span className="mt-[3px] shrink-0 rounded bg-[#fdf0d5] px-1.5 py-0.5 text-[11px] font-bold text-[#8a6212]">★ {pinnedLabel}</span>
         ) : null}
         <span
           className={`mt-[3px] shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold ${
@@ -502,6 +504,7 @@ function HighlightCard({ item, lang, comments, identity, onNeedIdentity, open, o
       open={open}
       onToggle={onToggle}
       pinned={item.pinned}
+      pinnedLabel={t.pinned}
       tag={typeLabel}
       tagTone="curated"
       title={rowTitle}
@@ -724,7 +727,7 @@ function PostCard({ post, lang, onDelete, open, onToggle }: { post: ForumPost; l
     .join(' · ');
 
   return (
-    <ThreadRow open={open} onToggle={onToggle} tag={t.filters[post.kind]} tagTone="post" title={rowTitle} meta={meta}>
+    <ThreadRow open={open} onToggle={onToggle} pinnedLabel={t.pinned} tag={t.filters[post.kind]} tagTone="post" title={rowTitle} meta={meta}>
       {isMeetup ? (
         <p className="text-[14px] text-[#0e6f4d]">
           {t.meetupAt}：{post.play_at ? new Date(post.play_at).toLocaleString() : ''}
@@ -1063,7 +1066,9 @@ export default function ForumPage() {
       }
 
       try {
-        const response = await fetch('/api/peer-feed?limit=20');
+        // 带上语言：英文版由服务端换成 featured_en 里的译文，没翻到的字段
+        // 仍然回中文原文。
+        const response = await fetch(`/api/peer-feed?limit=20&lang=${lang}`);
         const payload = (await response.json()) as { items?: PeerFeedItem[] };
         if (!isMounted) return;
         if (response.ok && payload.items?.length) {
@@ -1097,7 +1102,8 @@ export default function ForumPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+    // 语言变了要重新拉一次：译文在服务端替换，切语言不重拉就还是旧语言的内容。
+  }, [lang]);
 
   return (
     <div className={`min-h-screen overflow-x-hidden bg-[#fbfaf6] text-[#21242c] ${lang === 'zh' ? 'goodminton-zh' : ''}`}>

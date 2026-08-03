@@ -192,10 +192,12 @@ function formatEnDate(date) {
 }
 
 function buildExcerpt(topic, items) {
-  const sourceNames = [...new Set(items.map((item) => item.source))].slice(0, 3).join('、');
+  // 两种语言的顿号不一样。此前只 join 了一次就同时喂给中英两版，于是英文
+  // 摘要里长期挂着一个「、」。
+  const sources = [...new Set(items.map((item) => item.source))].slice(0, 3);
   return {
-    zh: `今天的相关来源集中在${sourceNames}。适合整理成训练目标、课堂口令和课后复盘动作。`,
-    en: `Today sources cluster around ${sourceNames}. Turn it into training goals, coach cues, and review actions.`,
+    zh: `今天的相关来源集中在${sources.join('、')}。适合整理成训练目标、课堂口令和课后复盘动作。`,
+    en: `Today sources cluster around ${sources.join(', ')}. Turn it into training goals, coach cues, and review actions.`,
   };
 }
 
