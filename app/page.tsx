@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import ContactFooter from './components/ContactFooter';
 import { useLang } from './components/LangContext';
+import { saveStudentSession } from '../lib/student-session';
 
 type Lang = 'zh' | 'en';
 
@@ -511,7 +512,7 @@ export default function Home() {
       const payload = (await response.json().catch(() => ({}))) as { student?: { name?: string }; error?: string };
       if (!response.ok || !payload.student) throw new Error(payload.error || (lang === 'zh' ? '学员 ID 不正确。' : 'Invalid student ID.'));
 
-      window.sessionStorage.setItem('goodminton-student-credential', credential);
+      saveStudentSession(credential);
       const profileResponse = await fetch('/api/forum-profile', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

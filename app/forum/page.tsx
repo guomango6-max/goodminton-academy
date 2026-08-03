@@ -10,6 +10,7 @@ import { useLang, type Lang } from '../components/LangContext';
 import ContactFooter from '../components/ContactFooter';
 import type { PeerFeedItem } from '../../lib/peer-feed-types';
 import { validateForumNickname } from '../../lib/forum-nickname';
+import { readStudentCredential, saveStudentSession } from '../../lib/student-session';
 
 type ForumIdentity =
   | { kind: 'student'; label: string }
@@ -573,7 +574,7 @@ const STUDENT_CREDENTIAL_KEY = 'goodminton-student-credential';
 
 function readCredential() {
   try {
-    return window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY) || '';
+    return readStudentCredential();
   } catch {
     return '';
   }
@@ -621,7 +622,7 @@ function ForumEntryGate({ lang, onEnter, onBrowse }: { lang: Lang; onEnter: (ide
       });
       const payload = (await response.json().catch(() => ({}))) as { student?: { name?: string }; error?: string };
       if (!response.ok || !payload.student) throw new Error(payload.error || '学员 ID 不正确。');
-      window.sessionStorage.setItem(STUDENT_CREDENTIAL_KEY, credential);
+      saveStudentSession(credential);
 
       let nickname = '';
       const profileResponse = await fetch('/api/forum-profile', {
@@ -924,11 +925,51 @@ export default function ForumPage() {
   const [browsing, setBrowsing] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setIdentity(loadIdentity());
+    let cancelled = false;
+
+    const timer = window.setTimeout(async () => {
+      const saved = loadIdentity();
+      if (saved) {
+        setIdentity(saved);
+        return;
+      }
+
+      // 已经在学员页登录过的人，不该在这里再输一遍学员 ID。凭据同源存在
+      // sessionStorage 里，直接拿它换昵称、自动认成学员身份。
+      // 不需要新接口——/api/forum-profile 本来就接受凭据。
+      const credential = readCredential();
+      if (!credential) {
+        if (!cancelled) setIdentity(null);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/forum-profile', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          cache: 'no-store',
+          body: JSON.stringify({ credential }),
+        });
+        if (!response.ok) throw new Error('unauthorized');
+        const payload = (await response.json()) as { nickname?: string };
+        if (cancelled) return;
+        const auto: ForumIdentity = {
+          kind: 'student',
+          label: payload.nickname || (lang === 'zh' ? '学员' : 'Student'),
+        };
+        saveIdentity(auto);
+        setIdentity(auto);
+      } catch {
+        // 凭据失效或接口不可用 → 退回正常的身份门，不把人卡住。
+        if (!cancelled) setIdentity(null);
+      }
     }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [lang]);
 
   function switchIdentity() {
     clearIdentity();

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Lang, useLang } from '../components/LangContext';
+import { clearStudentSession, readStudentCredential, readStudentSnapshot, saveStudentSession } from '../../lib/student-session';
 import type { PeerFeedItem } from '../../lib/peer-feed-types';
 
 type StudentPathItem = {
@@ -662,7 +663,7 @@ function readCurrentStudent(): StudentData | null {
     return null;
   }
 
-  const savedStudent = window.sessionStorage.getItem(STUDENT_CURRENT_KEY);
+  const savedStudent = readStudentSnapshot() || null;
 
   if (savedStudent === cachedCurrentStudentRaw) {
     return cachedCurrentStudent;
@@ -679,7 +680,7 @@ function readCurrentStudent(): StudentData | null {
     cachedCurrentStudent = JSON.parse(savedStudent) as StudentData;
     return cachedCurrentStudent;
   } catch {
-    window.sessionStorage.removeItem(STUDENT_CURRENT_KEY);
+    clearStudentSession();
     cachedCurrentStudentRaw = null;
     cachedCurrentStudent = null;
     return null;
@@ -2001,7 +2002,7 @@ function MessageThread({ studentId, lang }: { studentId: string; lang: Lang }) {
 
   const exchange = useCallback(
     async (payload: Record<string, unknown>) => {
-      const credential = window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY);
+      const credential = readStudentCredential();
       if (!credential) return null;
       const response = await fetch('/api/student-messages', {
         method: 'POST',
@@ -2227,7 +2228,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
   const [peerFeedLoading, setPeerFeedLoading] = useState(false);
   const [forumOpening, setForumOpening] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(() =>
-    typeof window === 'undefined' ? true : Boolean(window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY)),
+    typeof window === 'undefined' ? true : Boolean(readStudentCredential()),
   );
   const [lessonInput, setLessonInput] = useState({
     studentReflection: initialDraft?.lessonInput?.studentReflection ?? displayStudent.lessonSummary?.studentReflection ?? '',
@@ -2289,7 +2290,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
   }, [checkedHomework, draftKey, homeworkDateKey, lessonInput, matchInput]);
 
   useEffect(() => {
-    const credential = window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY);
+    const credential = readStudentCredential();
     if (!credential) return;
 
     const controller = new AbortController();
@@ -2458,7 +2459,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
     if (forumOpening) return;
     setForumOpening(true);
     try {
-      const credential = window.sessionStorage.getItem(STUDENT_CREDENTIAL_KEY) || '';
+      const credential = readStudentCredential();
       let nickname = '';
       if (credential) {
         const response = await fetch('/api/forum-profile', {
@@ -2862,10 +2863,9 @@ export default function StudentPage() {
 
       setActiveStudent(payload.student);
       try {
-        window.sessionStorage.setItem(STUDENT_CURRENT_KEY, JSON.stringify(payload.student));
-        window.sessionStorage.setItem(
-          STUDENT_CREDENTIAL_KEY,
+        saveStudentSession(
           typeof rawCredential === 'string' ? rawCredential.trim() : `${rawCredential.studentId || ''}${rawCredential.accessCode || ''}`,
+          JSON.stringify(payload.student),
         );
         window.dispatchEvent(new Event(STUDENT_SESSION_EVENT));
       } catch {
@@ -2895,8 +2895,7 @@ export default function StudentPage() {
   function logoutStudent() {
     setActiveStudent(null);
     try {
-      window.sessionStorage.removeItem(STUDENT_CURRENT_KEY);
-      window.sessionStorage.removeItem(STUDENT_CREDENTIAL_KEY);
+      clearStudentSession();
       window.dispatchEvent(new Event(STUDENT_SESSION_EVENT));
     } catch {
       // Ignore storage failures; clearing React state is enough for the current page.
