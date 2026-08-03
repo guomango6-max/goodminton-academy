@@ -117,6 +117,8 @@ const copy = {
   zh: {
     brand: 'Goodminton Academy',
     backHome: '返回首页',
+    studentPage: '切换到学生页面',
+    imStudent: '我是学员',
     kicker: 'Goodminton 论坛',
     title: '一起练，一起想明白',
     desc: '教练精选的课后总结和比赛复盘、学员之间的交流，还有约球。看别人怎么卡住、怎么想通，比只看正确动作更有用。',
@@ -183,6 +185,8 @@ const copy = {
   en: {
     brand: 'Goodminton Academy',
     backHome: 'Back to home',
+    studentPage: 'Student page',
+    imStudent: "I'm a student",
     kicker: 'Goodminton Forum',
     title: 'Train together, think it through together',
     desc: 'Coach-curated lesson summaries and match reviews, student talk, and games to join. Seeing how others get stuck and think it through beats only seeing perfect form.',
@@ -568,10 +572,8 @@ type FeedEntry =
   | { source: 'curated'; kind: 'lesson' | 'match'; sortAt: string; pinned: boolean; item: PeerFeedItem }
   | { source: 'post'; kind: 'discussion' | 'meetup'; sortAt: string; pinned: boolean; post: ForumPost };
 
-// 学员凭据存在学员页登录时写的 sessionStorage 里。发帖读它，
-// 服务端再据此解析身份——客户端传什么名字都不作数。
-const STUDENT_CREDENTIAL_KEY = 'goodminton-student-credential';
-
+// 学员凭据由 lib/student-session 统一读写。发帖读它，服务端再据此解析
+// 身份——客户端传什么名字都不作数。
 function readCredential() {
   try {
     return readStudentCredential();
@@ -622,7 +624,9 @@ function ForumEntryGate({ lang, onEnter, onBrowse }: { lang: Lang; onEnter: (ide
       });
       const payload = (await response.json().catch(() => ({}))) as { student?: { name?: string }; error?: string };
       if (!response.ok || !payload.student) throw new Error(payload.error || '学员 ID 不正确。');
-      saveStudentSession(credential);
+      // 连同学员快照一起存：学生页靠快照决定「已登录」，只存凭据的话从论坛
+      // 切过去还会再被问一次 ID——而这恰恰是头部那个入口最常走的路。
+      saveStudentSession(credential, JSON.stringify(payload.student));
 
       let nickname = '';
       const profileResponse = await fetch('/api/forum-profile', {
@@ -1106,9 +1110,15 @@ export default function ForumPage() {
             ← {t.backHome}
           </Link>
           <span className="ml-auto hidden text-[15px] font-medium text-[#64737a] sm:inline">{t.brand}</span>
-          {identity ? (
+          {/* 学员登录后，头部这个位置最有用的动作是回自己的学生页，不是换身份——
+              换身份几乎没人用。访客还没有学生页可去，对他们保留身份门入口。 */}
+          {identity?.kind === 'student' ? (
+            <Link href="/student" className="rounded-[8px] border border-[#b9ddca] bg-[#edf8f2] px-3 py-2 text-sm font-semibold text-[#0e6f4d] hover:bg-[#e3f4eb]">
+              {t.studentPage}
+            </Link>
+          ) : identity ? (
             <button type="button" onClick={switchIdentity} className="rounded-[8px] border border-[#b9ddca] bg-[#edf8f2] px-3 py-2 text-sm font-semibold text-[#0e6f4d] hover:bg-[#e3f4eb]">
-              {identity.label} · {lang === 'zh' ? '切换' : 'Switch'}
+              {t.imStudent}
             </button>
           ) : null}
           <button
