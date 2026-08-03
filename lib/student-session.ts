@@ -62,6 +62,20 @@ export function saveStudentSession(credential: string, studentJson?: string) {
   }
 }
 
+// 把 90 天从「最后一次登录」改成「最后一次打开」。
+//
+// 固定 90 天的问题是：一个每周都来的学员，第 91 天照样被踢出去重输 ID——
+// 而他恰恰是最不该被打扰的人。滑动续期让活跃的人一直保持登录，同时对
+// 共用设备的边界没有放松：真正不再来的人，90 天后照样过期。
+export function touchStudentSession() {
+  try {
+    if (!window.localStorage.getItem(CREDENTIAL_KEY) || expired()) return;
+    window.localStorage.setItem(EXPIRY_KEY, String(Date.now() + MAX_AGE_MS));
+  } catch {
+    // 隐私模式下写不了，本次会话照常用，只是不续期。
+  }
+}
+
 export function clearStudentSession() {
   try {
     for (const key of [CREDENTIAL_KEY, STUDENT_KEY, EXPIRY_KEY]) {

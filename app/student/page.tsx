@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Lang, useLang } from '../components/LangContext';
-import { clearStudentSession, readStudentCredential, readStudentSnapshot, saveStudentSession } from '../../lib/student-session';
+import { clearStudentSession, readStudentCredential, readStudentSnapshot, saveStudentSession, touchStudentSession } from '../../lib/student-session';
 import type { PeerFeedItem } from '../../lib/peer-feed-types';
 
 type StudentPathItem = {
@@ -161,8 +161,6 @@ type StudentSubmissionLog = {
 };
 
 const STUDENT_SESSION_EVENT = 'goodminton-student-current-change';
-const STUDENT_CURRENT_KEY = 'goodminton-student-current';
-const STUDENT_CREDENTIAL_KEY = 'goodminton-student-credential';
 let cachedCurrentStudentRaw: string | null | undefined;
 let cachedCurrentStudent: StudentData | null = null;
 
@@ -2828,7 +2826,12 @@ export default function StudentPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const autoLoginStarted = useRef(false);
 
-  const loginStudent = useCallback(async (rawCredential: string | { studentId: string; accessCode: string }) => {
+  const loginStudent = useCallback(async (
+    rawCredential: string | { studentId: string; accessCode: string },
+    // silent：用存着的凭据自动恢复登录态时用。失败不该把一张报错糊在脸上，
+    // 学员只是打开页面而已；静默清掉过期凭据、回到正常登录框就好。
+    options?: { silent?: boolean },
+  ) => {
     if (loginLoading) return;
 
     const credential =
@@ -2836,13 +2839,13 @@ export default function StudentPage() {
         ? { studentId: rawCredential.trim(), accessCode: '' }
         : rawCredential;
     if (!credential.studentId) {
-      setLoginError(t.enterCredential);
+      if (!options?.silent) setLoginError(t.enterCredential);
       setLoginStatus('');
       return;
     }
 
     setLoginError('');
-    setLoginStatus(t.loadingProfile);
+    setLoginStatus(options?.silent ? '' : t.loadingProfile);
     setLoginLoading(true);
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 10000);
@@ -2873,14 +2876,26 @@ export default function StudentPage() {
       }
       setLoginStatus(t.opened);
     } catch (error) {
-      setLoginError(
-        error instanceof DOMException && error.name === 'AbortError'
-          ? t.timeout
-          : error instanceof Error
-            ? error.message
-            : t.failed,
-      );
-      setLoginStatus('');
+      if (options?.silent) {
+        // 存着的凭据已经不作数了（改码、退学、或者 90 天到期）。清掉它，
+        // 让页面落回普通登录框，而不是留一个会一直失败的幽灵登录态。
+        try {
+          clearStudentSession();
+          window.dispatchEvent(new Event(STUDENT_SESSION_EVENT));
+        } catch {
+          // 存储不可写时，React 状态本身已经是未登录，不影响本次使用。
+        }
+        setLoginStatus('');
+      } else {
+        setLoginError(
+          error instanceof DOMException && error.name === 'AbortError'
+            ? t.timeout
+            : error instanceof Error
+              ? error.message
+              : t.failed,
+        );
+        setLoginStatus('');
+      }
     } finally {
       window.clearTimeout(timeout);
       setLoginLoading(false);
@@ -2905,20 +2920,32 @@ export default function StudentPage() {
     setLoginError('');
   }
 
+  // 每打开一次学生页就把 90 天往后推一次。走快照恢复的那条路不经过登录，
+  // 否则常来的学员反而会在第 91 天被踢出去。
+  useEffect(() => {
+    if (student) touchStudentSession();
+  }, [student]);
+
   useEffect(() => {
     if (autoLoginStarted.current || student || loginLoading || typeof window === 'undefined') {
       return;
     }
 
-    const autoCredential = new URLSearchParams(window.location.search).get('credential');
+    // 两个来源：URL 上带的一次性凭据，和本机存着的登录态。
+    //
+    // 后者是这次补的。此前这里只认 URL 参数，而「已登录」完全由学员快照
+    // 决定——于是任何只存了凭据、没存快照的入口（论坛身份门就是一个）都会
+    // 在这里被重新问一次 ID，哪怕 90 天的登录态还好好存着。
+    const urlCredential = new URLSearchParams(window.location.search).get('credential');
+    const autoCredential = urlCredential || readStudentCredential();
     if (!autoCredential) {
       return;
     }
 
     autoLoginStarted.current = true;
-    window.history.replaceState(null, '', '/student');
+    if (urlCredential) window.history.replaceState(null, '', '/student');
     const autoLoginTimer = window.setTimeout(() => {
-      void loginStudent(autoCredential);
+      void loginStudent(autoCredential, { silent: !urlCredential });
     }, 0);
 
     return () => window.clearTimeout(autoLoginTimer);
