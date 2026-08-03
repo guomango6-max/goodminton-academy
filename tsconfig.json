@@ -9,6 +9,9 @@
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    // lib/ 里少数模块要能被 scripts/*.mjs 和 tests/*.mjs 用 node 直接 import，
+    // 而 node 的 ESM 解析要求写全 .ts 扩展名。noEmit 下开这个是安全的。
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",

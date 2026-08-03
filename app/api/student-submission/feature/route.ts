@@ -11,9 +11,60 @@ import { resolveStudentLogin } from '@/lib/student-login';
 import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { staffAuthorization, writeAdminAudit } from '@/lib/admin-auth';
+import { buildFeaturedTranslation } from '@/lib/featured-translation';
+import { resolveExcerpt } from '@/lib/peer-feed-excerpt';
 
 function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+type SupabaseAdmin = NonNullable<ReturnType<typeof createSupabaseAdminClient>>;
+
+// 加精之后立刻生成英文版并写回 featured_en。
+//
+// 需要重新读一次这条记录：翻译要覆盖 excerpt 和点评，而这两样都不在加精
+// 的请求体里——请求体只带导读、分类、等级。
+async function translateFeaturedRecord(supabase: SupabaseAdmin, recordId: string, angle: string) {
+  const { data, error } = await supabase
+    .from('student_history_records')
+    .select('record_type, payload, featured_excerpt, featured_title, featured_feedback, coach_feedback')
+    .eq('external_id', recordId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const row = data as {
+    record_type: string;
+    payload: unknown;
+    featured_excerpt: unknown;
+    featured_title: string | null;
+    featured_feedback: string | null;
+    coach_feedback: string | null;
+  };
+
+  const translation = await buildFeaturedTranslation({
+    title: cleanText(row.featured_title),
+    angle,
+    coachFeedback: cleanText(row.featured_feedback) || cleanText(row.coach_feedback),
+    excerpt: resolveExcerpt(row.record_type, row.featured_excerpt, row.payload),
+  });
+
+  if (!translation) return null;
+
+  const { error: writeError } = await supabase
+    .from('student_history_records')
+    .update({ featured_en: translation })
+    .eq('external_id', recordId);
+
+  // 列还没建（迁移没跑）时静默跳过：加精本身已经成功了。
+  if (writeError) {
+    if (!/featured_en/i.test(writeError.message || '')) {
+      console.error('[peer-wall-translate-write-error]', writeError);
+    }
+    return null;
+  }
+
+  return translation;
 }
 
 type FeaturePayload = {
@@ -128,6 +179,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Submission not found.' }, { status: 404 });
   }
 
+  // 英文版用的译文，在加精这一刻生成一次。
+  //
+  // 翻译失败不影响加精：featured_en 为空时，英文版读到的就是中文原文——
+  // 和这次改动之前一模一样。反过来让一次 DeepSeek 超时把整个加精操作打掉，
+  // 才是真的坏。
+  const translation = await translateFeaturedRecord(supabase, recordId, angle).catch((reason) => {
+    console.error('[peer-wall-translate-error]', reason);
+    return null;
+  });
+
   if (authorization.kind === 'super_admin') {
     await writeAdminAudit(authorization.userId, 'submission.feature', {
       targetType: 'student_history_record', targetId: recordId,
@@ -135,7 +196,7 @@ export async function POST(req: Request) {
     });
   }
 
-  return NextResponse.json({ ok: true, recordId: data.external_id });
+  return NextResponse.json({ ok: true, recordId: data.external_id, translated: Boolean(translation) });
 }
 
 type UnfeaturePayload = {

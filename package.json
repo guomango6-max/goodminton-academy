@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/request-rate-limit.test.mjs",
+    "test": "node --test \"tests/*.test.mjs\"",
     "training:note": "node scripts/create-training-note.mjs",
     "training:inbox": "node scripts/create-training-note.mjs --inbox",
     "training:fetch": "node scripts/fetch-external-training-sources.mjs",
