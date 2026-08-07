@@ -221,5 +221,13 @@
     "loginId": "xc28",
     "name": "宣春雨",
     "source": "student-xuan-chunyu.md"
+  },
+  {
+    "studentId": "arsenii",
+    "file": "arsenii.json",
+    "alias": "as",
+    "loginId": "as30",
+    "name": "Arsenii",
+    "source": "student-arsenii.md"
   }
 ]
