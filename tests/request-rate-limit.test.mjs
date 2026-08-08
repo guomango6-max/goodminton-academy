@@ -19,7 +19,7 @@ test.beforeEach(() => {
 });
 
 test('limits repeated attempts from one IP even when subjects change', () => {
-  const options = { windowMs: 60_000, maxPerIp: 2, maxPerSubject: 10 };
+  const options = { windowMs: 60_000, maxPerIp: 2 };
 
   assert.equal(checkRequestRateLimit(requestFrom('203.0.113.1'), 'login', 'a', options).allowed, true);
   assert.equal(checkRequestRateLimit(requestFrom('203.0.113.1'), 'login', 'b', options).allowed, true);
@@ -41,7 +41,7 @@ test('does not lock one credential out across different IP addresses', () => {
 });
 
 test('keeps scopes independent', () => {
-  const options = { windowMs: 60_000, maxPerIp: 1, maxPerSubject: 1 };
+  const options = { windowMs: 60_000, maxPerIp: 1 };
   const request = requestFrom('203.0.113.1');
 
   assert.equal(checkRequestRateLimit(request, 'student-login', 'same', options).allowed, true);
