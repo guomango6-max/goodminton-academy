@@ -36,6 +36,18 @@ function subscribeLangChange(onStoreChange: () => void) {
   };
 }
 
+/**
+ * 写入本地语言偏好。
+ *
+ * 首页的语言切换已经改成换地址（/ ↔ /en），但学员页和论坛仍然只认 localStorage，
+ * 所以换地址的同时也要把偏好写一致，免得学员从英文首页点进学员页又变回中文。
+ */
+export function setStoredLang(next: Lang) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LANG_STORAGE_KEY, next);
+  window.dispatchEvent(new Event(LANG_CHANGE_EVENT));
+}
+
 export function LangProvider({ children }: { children: ReactNode }) {
   const lang = useSyncExternalStore(subscribeLangChange, getStoredLang, getServerLang);
 

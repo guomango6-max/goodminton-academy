@@ -1,4 +1,14 @@
+import type { Metadata } from 'next';
 import ChatRoom from '../components/ChatRoom';
+
+// 这一页此前没有自己的 metadata，于是从根 layout 继承了 canonical: "/"——
+// 等于对搜索引擎声明「我就是首页」，而它同时又躺在 sitemap 里。两个信号打架，
+// 结果通常是这一页被折叠掉不收。
+export const metadata: Metadata = {
+  title: '球友咨询',
+  description: '反手、发接发、杀球、双打轮转到比赛策略：把最常见的卡点先聊清楚。',
+  alternates: { canonical: '/friend' },
+};
 
 export default function FriendPage() {
   return (
