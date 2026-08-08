@@ -2,7 +2,12 @@
   "studentId": "arsenii",
   "accessCode": "30",
   "name": "Arsenii",
-  "level": "新人待评估",
-  "stage": {"title": "首课基线评估"},
-  "lessonSummary": {"date": "2026-08-03", "title": "首课基线评估"}
+  "level": "C2",
+  "stage": {
+    "title": "C2 初训基线"
+  },
+  "lessonSummary": {
+    "date": "2026-08-06",
+    "title": "C2 初训基线"
+  }
 }
