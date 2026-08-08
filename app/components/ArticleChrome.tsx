@@ -16,12 +16,14 @@ const copy = {
   zh: {
     home: '回首页',
     articles: '训练栏目',
+    venues: '场馆名录',
     switch: 'EN',
     switchLabel: 'Read in English',
   },
   en: {
     home: 'Home',
     articles: 'Training notes',
+    venues: 'Venues',
     switch: '中文',
     switchLabel: '切换到中文',
   },
@@ -57,6 +59,9 @@ export default function ArticleChrome({
             </Link>
             <Link href={`${lang === 'en' ? '/en' : ''}/articles`} className="text-[#52636b] hover:text-[#16845f]">
               {t.articles}
+            </Link>
+            <Link href={`${lang === 'en' ? '/en' : ''}/venues`} className="text-[#52636b] hover:text-[#16845f]">
+              {t.venues}
             </Link>
             <Link
               href={counterpartHref}

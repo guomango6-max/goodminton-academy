@@ -51,6 +51,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...localizedEntry(homePath("zh"), homePath("en"), now, 1),
     ...localizedEntry(articleIndexPath("zh"), articleIndexPath("en"), newestArticle, 0.8),
+    // 场馆名录：本站唯一一页别人有理由主动引用的内容，优先级仅次于首页。
+    ...localizedEntry("/venues", "/en/venues", now, 0.9),
     ...articles.flatMap((article) =>
       localizedEntry(
         articlePath(article.slug, "zh"),
