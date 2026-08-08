@@ -2198,7 +2198,8 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
     '';
   const draftKey = `goodminton-student-draft-${displayStudent.studentId}`;
   const logKey = `goodminton-student-submission-log-${displayStudent.studentId}`;
-  const rank = displayRank(displayStudent.level, displayStudent.progress);
+  const progressValue = displayStudent.progress || 0;
+  const rank = displayRank(displayStudent.level, progressValue);
   const rankLabel = tLabel(rank, lang);
   const contentFrameStyle: React.CSSProperties = {
     width: 'min(1160px, calc(100% - min(228px, max(0px, 100% - 1160px))))',
@@ -2209,11 +2210,21 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
   const [homeworkDateKey] = useState(() => getLocalDateKey());
   const initialCheckedHomework =
     initialDraft?.checkedHomeworkDate === homeworkDateKey ? initialDraft.checkedHomework || [] : null;
+  const homeworkItems = displayStudent.lessonSummary?.homework || [];
+  const studentTags = displayStudent.tags || [];
+  const stagePath = displayStudent.stage?.path || [];
+  const stageTitle = displayStudent.stage?.title || currentTrainingFocus || t.empty;
+  const stageDescription = displayStudent.stage?.description || '';
+  const stageProgress = displayStudent.stage?.pathProgress || 0;
+  const todayTitle = displayStudent.today?.title || stageTitle;
+  const todayDescription = displayStudent.today?.description || stageDescription;
+  const reviewMode = displayStudent.reviewMode || t.empty;
+  const lastUpdated = displayStudent.lastUpdated || '';
   const [reviewedItems, setReviewedItems] = useState<string[]>([]);
   const [checkedHomework, setCheckedHomework] = useState<string[]>(
     () =>
       initialCheckedHomework ||
-    displayStudent.lessonSummary?.homework.filter((item) => item.done).map((item) => item.id) ||
+      homeworkItems.filter((item) => item.done).map((item) => item.id) ||
       [],
   );
   const [lessonSubmissionStatus, setLessonSubmissionStatus] = useState('');
@@ -2529,7 +2540,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
                   {t.trainingData(displayStudent.name)}
                 </h1>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                  {t.updated(displayStudent.lastUpdated)}
+                  {t.updated(lastUpdated)}
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:hidden">
                   <a href="#student-section-1" className="flex min-h-12 items-center justify-center rounded-md bg-[#16845f] px-3 py-2 text-sm font-semibold text-white">
@@ -2558,15 +2569,15 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
                 </div>
                 <div className="flex flex-col items-center justify-center">
                   <div className="text-xs text-slate-500">{t.progress}</div>
-                  <div className="mt-1 text-sm font-semibold">{displayStudent.progress}%</div>
+                  <div className="mt-1 text-sm font-semibold">{progressValue}%</div>
                 </div>
                 <div className="flex flex-col items-center justify-center">
                   <div className="text-xs text-slate-500">{t.mode}</div>
-                  <div className="mt-1 text-sm font-semibold">{displayStudent.reviewMode}</div>
+                  <div className="mt-1 text-sm font-semibold">{reviewMode}</div>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {displayStudent.tags.slice(0, 3).map((tag, index) => (
+                {studentTags.slice(0, 3).map((tag, index) => (
                   <Pill key={tag} active={index === 0}>
                     {tLabel(tag, lang)}
                   </Pill>
@@ -2718,7 +2729,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
 
           <Section id="student-section-4" title={t.homework}>
             <div className="grid gap-3 md:grid-cols-3">
-              {displayStudent.lessonSummary?.homework.map((item) => {
+              {homeworkItems.map((item) => {
                 const checked = checkedHomework.includes(item.id);
                 return (
                   <label
@@ -2743,30 +2754,30 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
               <div>
                 <div className="text-sm text-slate-500">{t.currentTraining}</div>
                 <h2 className="mt-2 text-xl font-semibold text-slate-950 sm:text-2xl">
-                  {displayStudent.stage.title}
+                  {stageTitle}
                 </h2>
-                <p className="mt-3 text-base leading-7 text-slate-600">{displayStudent.stage.description}</p>
+                <p className="mt-3 text-base leading-7 text-slate-600">{stageDescription}</p>
                 <div className="mt-6">
                   <div className="mb-3 flex flex-wrap gap-2">
-                    {displayStudent.stage.path.map((item) => (
+                    {stagePath.map((item) => (
                       <Pill key={item.label} active={item.active}>
                         {tLabel(item.label, lang)}
                       </Pill>
                     ))}
                   </div>
-                  <ProgressBar value={displayStudent.stage.pathProgress} />
+                  <ProgressBar value={stageProgress} />
                 </div>
               </div>
 
               <div className="rounded-md border border-[#dfe7dc] bg-[#f4f8f1] p-4">
                 <div className="text-sm text-slate-500">{t.todayPractice}</div>
-                <div className="mt-2 text-xl font-semibold">{displayStudent.today.title}</div>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{displayStudent.today.description}</p>
+                <div className="mt-2 text-xl font-semibold">{todayTitle}</div>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{todayDescription}</p>
                 <button
-                  onClick={() => markReviewed(displayStudent.today.title)}
+                  onClick={() => markReviewed(todayTitle)}
                   className="mt-5 w-full rounded-md border border-[#cfe8d9] bg-white px-3 py-2 text-sm font-medium text-[#0e6f4d]"
                 >
-                  {reviewedItems.includes(displayStudent.today.title) ? t.reviewed : t.markReviewed}
+                  {reviewedItems.includes(todayTitle) ? t.reviewed : t.markReviewed}
                 </button>
               </div>
             </div>
