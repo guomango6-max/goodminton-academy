@@ -61,10 +61,18 @@ export const siteProfile = {
   ] as Venue[],
 
   // ⬇️ 待填。没填的会被自动省略，不会输出空字段。
-  openingHours: [] as string[], // 例：["Mo-Fr 16:00-21:00", "Sa 10:00-18:00"]
+  // 2026-08-09 用户确认：每天 10:00–20:00。schema.org 的格式是「日期区间 时段」，
+  // Mo-Su 表示每天。这一条同时是 Facebook 主页上的营业时间，两处要一致——
+  // 商家信息在不同来源之间打架，对检索的伤害比信息缺失更大。
+  openingHours: ["Mo-Su 10:00-20:00"] as string[],
+
+  // sameAs 的作用是宣告「这个网站和这些账号是同一个实体」。不声明，Google 和
+  // AI 就把它们当成互不相干的东西，主页攒的信号一点也传不到站点上。
+  facebook: "https://www.facebook.com/profile.php?id=61592596510432",
 
   // Google Business Profile 建好之后把链接放这里，一并进 sameAs——
   // 这是让「评价」这项资产被 AI 读到的关键一环。
+  // 2026-08-09 状态：视频验证的「授权证明」一步需要商业登记，暂时走不通，先空着。
   googleBusinessProfile: "",
   xiaohongshu: "",
 
@@ -146,7 +154,7 @@ export function buildLocalBusinessJsonLd() {
       name,
       containedInPlace: { "@type": "Country", name: p.countryName },
     })),
-    sameAs: [p.googleBusinessProfile, p.xiaohongshu, p.whatsapp],
+    sameAs: [p.facebook, p.googleBusinessProfile, p.xiaohongshu, p.whatsapp],
     makesOffer: [
       {
         "@type": "Offer",
