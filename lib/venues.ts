@@ -9,10 +9,22 @@
 //   （liikuntakauppa.hel.fi）和市政官方价目表 liikuntapaikat_hinnasto2025
 // - 星级和上手评价只写实际打过的馆，没去过的一律留空，不猜
 //
-// ⚠️ 羽协那份名录已经查出两处错（Targa Arena 地址、把 padel 馆列进来），
-//    它只适合当「有哪些馆」的骨架，具体字段一律回官网核。
+// ⚠️ 羽协那份名录已经查出三处错（Targa Arena 地址、把 padel 馆列进来、
+//    把 UniSport Otahalli 当羽毛球馆——UniSport 自己的价目表里羽毛球只有
+//    Kumpula）。它只适合当「有哪些馆」的骨架，具体字段一律回官网核。
+//
+// 2026-08-09 三处收口：
+// 1. 删掉「会员制」这一档。它原本的定义是「不对外单租」，而这是错的：
+//    Forever 两馆对所有人开价 18 €／27 €，会员拿的是折扣不是准入；UniSport
+//    Kumpula 的价目表直接列了 normal price。既然谁都能订，它们就是私营馆的
+//    一种计价方式，不是第三种模式。
+// 2. 删掉数据不足且不影响决策的五家：Katajanokka（按面积整租，两三个人用不
+//    上）、Merihaka / Mandatum / Talin Tenniskeskus（查不到价格）、
+//    Ruoholahti（去过，无可无不可）。
+// 3. 价格里凡是带条件的（每人／整块／生效日期），条件必须贴着数字写在同一个
+//    字段里。读者会照着这个数字算钱，把条件挪进 note 就是在制造误读。
 
-export type VenueTier = 'city' | 'private' | 'members';
+export type VenueTier = 'city' | 'private';
 
 export type Bilingual = { zh: string; en: string };
 
@@ -73,17 +85,6 @@ export const venues: Venue[] = [
     },
   },
   {
-    id: 'katajanokka',
-    name: 'Katajanokan liikuntahalli',
-    tier: 'city',
-    city: 'Helsinki',
-    streetAddress: 'Katajanokka',
-    postalCode: '',
-    courts: null,
-    courtsNote: { zh: '按场地面积租（大侧 500 m²、小厅 250 m²）', en: 'Rented by area (500 m² / 250 m²)' },
-    booking: 'liikuntakauppa.hel.fi',
-  },
-  {
     id: 'kisahalli',
     name: 'Töölön Kisahalli',
     tier: 'city',
@@ -91,10 +92,10 @@ export const venues: Venue[] = [
     streetAddress: 'Paavo Nurmen kuja 1 D',
     postalCode: '',
     courts: null,
-    courtsNote: { zh: '不作为羽毛球场地开放预订', en: 'Not bookable as badminton' },
+    courtsNote: { zh: '排期而定，市政价目表里没有羽毛球条目', en: 'Depends on the schedule; no badminton line in the city price list' },
     note: {
-      zh: '只能在排球场没被预订时散客进去打，市政价目表里也没有羽毛球条目。别按"能订到"来计划。',
-      en: 'Drop-in only, on the volleyball courts when nobody has them reserved. It has no badminton line in the city price list either. Do not plan around it.',
+      zh: '和 Liikuntamylly 一样是共用场馆，羽毛球得和其他运动协调排期。能不能打取决于那周怎么排的。',
+      en: 'A shared hall like Liikuntamylly — badminton has to be scheduled around the other sports. Whether you can play depends on how that week was allocated.',
     },
   },
 
@@ -126,9 +127,11 @@ export const venues: Venue[] = [
     postalCode: '00350',
     courts: 12,
     courtsNote: { zh: '扩建部分 2026-08-10 起启用', en: 'An extension opened 10 Aug 2026' },
+    // 常规季价（10.8.2026–15.6.2027）。夏季价目到 9.8.2026 为止，两套不一样，
+    // 所以生效日期直接写进价格字段——VENUES_VERIFIED 的月份粒度盖不住这个。
     price: {
-      zh: '16 点前 17 €（固定时段 16 €、折扣组 13 €）；16–21 点 30 €；21–22 点 28 €。租拍 4 €、球 1 €',
-      en: '€17 before 16:00 (€16 standing slot, €13 discount groups); €30 at 16:00–21:00; €28 at 21:00–22:00. Racket €4, shuttle €1',
+      zh: '（8/10 起常规季）16 点前 17 €（固定时段 16 €、折扣组 13 €）；16–21 点 30 €；21–22 点 28 €。租拍 4 €、球 1 €',
+      en: '(regular season from 10 Aug) €17 before 16:00 (€16 standing slot, €13 discount groups); €30 at 16:00–21:00; €28 at 21:00–22:00. Racket €4, shuttle €1',
     },
     booking: 'talihalli.cintoia.com',
     note: {
@@ -222,18 +225,6 @@ export const venues: Venue[] = [
     note: { zh: '开赛前 12 小时可免费取消。', en: 'Free cancellation up to 12 hours before.' },
   },
   {
-    id: 'merihaka',
-    name: 'Merihaan Pallohalli',
-    tier: 'private',
-    city: 'Helsinki',
-    streetAddress: 'Haapaniemenkatu 14 B',
-    postalCode: '00530',
-    courts: 6,
-    courtsNote: { zh: 'Graboflex 塑胶', en: 'Graboflex mat' },
-    booking: 'meripeli.cintoia.com',
-    note: { zh: '夏季只在周一至周四 15–21 点开放，周五至周日关闭。', en: 'In summer open Mon–Thu 15:00–21:00 only, closed Fri–Sun.' },
-  },
-  {
     id: 'vuosaari',
     name: 'Vuosaaren Urheilutalo',
     tier: 'private',
@@ -274,31 +265,6 @@ export const venues: Venue[] = [
     booking: 'urheiluhallit.fi',
   },
   {
-    id: 'mandatum',
-    name: 'Mandatum Center',
-    tier: 'private',
-    city: 'Helsinki',
-    streetAddress: 'Kulosaarentie 2',
-    postalCode: '00570',
-    courts: 4,
-    booking: 'mandatumcenter.fi',
-    note: { zh: '网球与羽毛球全年开放。', en: 'Tennis and badminton, year round.' },
-  },
-  {
-    id: 'tali',
-    name: 'Talin Tenniskeskus',
-    tier: 'private',
-    city: 'Helsinki',
-    streetAddress: 'Kutomokuja 4',
-    postalCode: '00380',
-    courts: 4,
-    booking: 'talitaivallahti.feel.cintoia.com',
-    note: {
-      zh: '压倒性地是个网球场馆：33 片网球（翻修后 26 片室内）对 4 片羽毛球，官网几乎不提羽毛球。每天 6:00–23:30。',
-      en: 'Overwhelmingly a tennis venue: 33 tennis courts (26 indoor after the renovation) against 4 for badminton, and their own site barely mentions it. Open 6:00–23:30 daily.',
-    },
-  },
-  {
     id: 'lltk',
     name: 'Laaksolahden Tenniskeskus (LLTK)',
     tier: 'private',
@@ -323,21 +289,6 @@ export const venues: Venue[] = [
     booking: 'urheiluhallit.fi',
   },
   {
-    id: 'ruoholahti',
-    name: 'Ruoholahden Palloiluhalli',
-    tier: 'private',
-    city: 'Helsinki',
-    streetAddress: 'Kellosaarenkatu 3',
-    postalCode: '00180',
-    courts: null,
-    booking: 'palloiluhalli.com',
-    stars: 2,
-    note: {
-      zh: '去过。没什么毛病，也没什么亮点——就在附近的话可以，专程跑一趟不值。',
-      en: 'I have played here. Nothing wrong with it and nothing to recommend it either — fine if it is your neighbourhood, not worth crossing town for.',
-    },
-  },
-  {
     id: 'toolo',
     name: 'Töölön Urheilutalo',
     tier: 'private',
@@ -349,55 +300,98 @@ export const venues: Venue[] = [
     booking: 'urheiluhallit.fi',
   },
 
-  // ---- 会员制：先得是学生或会员，不对外单租 ----
   {
     id: 'unisport-kumpula',
     name: 'UniSport Kumpula',
-    tier: 'members',
+    tier: 'private',
     city: 'Helsinki',
     streetAddress: 'Väinö Auerinkatu 11',
     postalCode: '00560',
-    courts: null,
-    note: { zh: '需要 UniSport 会员资格（在校学生与教职工）。', en: 'Requires UniSport membership (students and staff).' },
-  },
-  {
-    id: 'unisport-otahalli',
-    name: 'UniSport Otahalli',
-    tier: 'members',
-    city: 'Espoo',
-    streetAddress: 'Otaranta 6',
-    postalCode: '02150',
-    courts: null,
-    note: { zh: '同上。学生的话，这是全区性价比最高的选择。', en: 'Same. If you are a student, this is the best value in the region.' },
-  },
-  {
-    id: 'forever-hiekkaharju',
-    name: 'Forever Hiekkaharju',
-    tier: 'members',
-    city: 'Vantaa',
-    streetAddress: 'Tennistie 3',
-    postalCode: '01370',
-    courts: null,
-    booking: 'GoActive',
-    coachHere: true,
-    note: { zh: '健身房会员制，每日 5–23 点，免费停车。', en: 'Gym membership, open 05:00–23:00 daily, free parking.' },
+    courts: 15,
+    // 订到手的是三分之一个场馆（约 5 片），不是一片。价格必须带着这个单位，
+    // 否则 17 € 会被读成「一片场 17 €」，两个人去打完全不是这个数。
+    courtsNote: { zh: '整馆 15 片，按 1/3 场馆为单位预订', en: '15 courts in the hall, booked in thirds' },
+    price: {
+      zh: '每 1/3 场馆：平日 7–16 与每天 21–23 点 17 €；周五 16–21 与周六 22 €；周日至周四 16–21 点 28 €。在校学生 10 / 12 / 23 €，教职工 11 / 13 / 24 €',
+      en: 'Per third of the hall: €17 Sun–Fri 7:00–16:00 and daily 21:00–23:00; €22 Fri 16:00–21:00 and Sat; €28 Sun–Thu 16:00–21:00. Students €10 / 12 / 23, staff €11 / 13 / 24',
+    },
+    booking: 'unisport.fi',
+    note: {
+      zh: '非会员照样能订，价目表里直接列了对外价——不需要是学生。全区第二大的馆，学生 10 €/h 的白天场是学生的最优解。UniSport 的羽毛球只有 Kumpula 这一处，Otaniemi 没有。',
+      en: 'Open to non-members: the price list has a public rate, you do not need to be a student. Second largest hall in the region, and the €10 student daytime rate is the best deal any student will find. Kumpula is UniSport’s only badminton location — Otaniemi has none.',
+    },
   },
   {
     id: 'forever-matinkyla',
     name: 'Forever Matinkylä',
-    tier: 'members',
+    tier: 'private',
     city: 'Espoo',
     streetAddress: 'Matinkartanontie 1',
     postalCode: '02230',
-    courts: null,
-    booking: 'GoActive',
+    courts: 12,
+    price: {
+      zh: '平日 6–16 点 18 €（学生与退休 15 €）；平日 16–23 点及周末全天 27 €',
+      en: '€18 weekdays 6:00–16:00 (students and pensioners €15); €27 weekdays 16:00–23:00 and all weekend',
+    },
+    booking: 'foreverclub.goactivebooking.com',
     coachHere: true,
-    note: { zh: '健身房会员制，人多时可以订下几片场。', en: 'Gym membership; several courts can be reserved for a larger group.' },
+    note: {
+      zh: '非会员同价，会员拿的是折扣不是准入：平日 9–15 点免费、其余时段五折。',
+      en: 'Non-members pay the same rate — membership is a discount, not a gate: free on weekdays 9:00–15:00 and half price otherwise.',
+    },
+  },
+  {
+    id: 'forever-hiekkaharju',
+    name: 'Forever Hiekkaharju',
+    tier: 'private',
+    city: 'Vantaa',
+    streetAddress: 'Tennistie 3',
+    postalCode: '01370',
+    courts: 5,
+    courtsNote: { zh: '4 片双打线 + 1 片单打线', en: '4 with doubles lines, 1 with singles lines' },
+    price: {
+      zh: '平日 6–16 点 18 €（学生与退休 15 €）；平日 16–23 点及周末全天 27 €',
+      en: '€18 weekdays 6:00–16:00 (students and pensioners €15); €27 weekdays 16:00–23:00 and all weekend',
+    },
+    booking: 'foreverclub.goactivebooking.com',
+    coachHere: true,
+    note: { zh: '和 Matinkylä 同价同政策。每日 5–23 点，免费停车。', en: 'Same rates and policy as Matinkylä. Open 05:00–23:00 daily, free parking.' },
   },
 ];
 
 export function venuesByTier(tier: VenueTier) {
   return venues.filter((venue) => venue.tier === tier);
+}
+
+/**
+ * 极简层：每家一句，大纲粒度。
+ *
+ * 上面每家的 `note` 是查证时留下的**全细节版**——为什么这家值得去、哪个时段
+ * 是坑、政策怎么写的。那一层不删，以后写文章、答疑、做对比页都要用。
+ * 这里是它的**极简版**，只留一句会改变「去不去」的话，页面表格渲染这一层。
+ *
+ * 两层分开而不是把 note 改短：改短就等于把查证结果扔了，而查证是这一页唯一
+ * 的护城河。没有摘要的场馆自动回落到 note——短到不需要压缩的就别硬造一层。
+ */
+const summaries: Record<string, Bilingual> = {
+  ruskeasuo: { zh: '白天大片空着，傍晚被手球俱乐部占满', en: 'Wide open in the daytime, handball clubs take the evenings' },
+  liikuntamylly: { zh: '只有周一、周四晚有羽毛球时段', en: 'Badminton slots on Monday and Thursday evenings only' },
+  kisahalli: { zh: '共用场馆，能不能打取决于那周排期', en: 'Shared hall — depends on how the week was allocated' },
+  esport: { zh: '场地最多；晚间全区最贵且无学生价', en: 'Most courts; priciest evenings in the region, no student rate' },
+  talihalli: { zh: '带孩子首选，见下方学生价与家庭价', en: 'Best with kids — see the schoolkid and family rates below' },
+  rajakyla: { zh: '白天最便宜；2026 年现场不能订也不能付', en: 'Cheapest daytime; through 2026 you cannot book or pay on site' },
+  meilahti: { zh: '羽协合作馆，多支俱乐部在此训练；不需要 UniSport 会员', en: 'Association partner hall, several clubs train here; no UniSport membership needed' },
+  'smash-center': { zh: '22 点后 8,50 € 是全区最便宜的一小时；有发球机', en: 'The €8.50 late hour is the cheapest around; has a shuttle machine' },
+  targa: { zh: '16 点前家庭时段含拍含球', en: 'Family slots before 16:00 include rackets and shuttles' },
+  lltk: { zh: '6 月 29 日至 7 月 26 日整段关闭', en: 'Closed entirely 29 Jun – 26 Jul' },
+  'unisport-kumpula': { zh: '非会员照样能订；全区第二大', en: 'Open to non-members; second largest hall in the region' },
+  'forever-matinkyla': { zh: '非会员同价，会员是折扣不是门槛', en: 'Non-members pay the same; membership is a discount, not a gate' },
+  'forever-hiekkaharju': { zh: '和 Matinkylä 同价同政策', en: 'Same rates and policy as Matinkylä' },
+};
+
+/** 表格用极简层；没写摘要的回落到全细节 note。 */
+export function venueSummary(venue: Venue): Bilingual | undefined {
+  return summaries[venue.id] ?? venue.note;
 }
 
 /**

@@ -9,7 +9,7 @@ export const metadata: Metadata = localizedMetadata({
   lang: 'en',
   title: 'Badminton venues in Helsinki, Espoo & Vantaa',
   description:
-    'All 25 badminton venues in the Helsinki capital region: courts, prices and booking. City halls from €3.50 per person, private halls €8.50–41 per hour, plus which ones are members-only.',
+    'All 19 badminton venues in the Helsinki capital region: courts, prices and booking. City halls from €3.50 per person with no time limit, private halls €8.50–38 per hour — including UniSport and Forever, which anyone can book.',
   zhPath: '/venues',
   enPath: '/en/venues',
 });
