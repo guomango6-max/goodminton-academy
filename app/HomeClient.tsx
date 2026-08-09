@@ -192,12 +192,16 @@ const copy = {
   zh: {
     brand: 'Goodminton Academy',
     nav: [
+      // 全部两个字，视觉上是一排等宽的词；学员和论坛排在最末两位，因为这两个
+      // 点下去就离开首页了，把跳转项收在一起，前面几个才读得出是页内锚点。
       ['新闻', '#articles'],
       ['技术', '#articles'],
-      ['学员', '/student'],
       ['教练', '#coach'],
-      // 唯一一个跨页项：其余是页内锚点。/forum 在 robots.ts 里 noindex，
-      // 但从这里起就是站点导航上人人可点的公开页面了。
+      // 场馆名录是站内唯一一页别人有理由主动引用的内容（sitemap 优先级 0.9），
+      // 此前入口只挂在文章页顶栏，首页够不到。
+      ['场馆', '/venues'],
+      ['学员', '/student'],
+      // /forum 在 robots.ts 里 noindex，但从这里起就是站点导航上人人可点的公开页面了。
       ['论坛', '/forum'],
     ],
     bookTraining: '预约训练',
@@ -256,8 +260,10 @@ const copy = {
     nav: [
       ['News', '#articles'],
       ['Technique', '#articles'],
-      ['Students', '/student'],
       ['Coaches', '#coach'],
+      // 场馆是 nav 里唯一有英文路由的跨页项；/student 和 /forum 只有中文一版。
+      ['Venues', '/en/venues'],
+      ['Students', '/student'],
       ['Forum', '/forum'],
     ],
     bookTraining: 'Book training',
