@@ -11,13 +11,18 @@ const inter = Inter({
 });
 
 const siteUrl = new URL("https://goodminton.fi");
+// 中文描述以「城市 + 服务」开头，不以品牌名开头：搜的人不知道品牌名，
+// 他搜的是「赫尔辛基羽毛球教练」。品牌名往后放，标题里已经有了。
 const siteDescription =
-  "Goodminton Academy 提供芬兰羽毛球训练、学员成长图谱、课后反馈追踪、比赛复盘和 AI 辅助问答。";
+  "赫尔辛基、埃斯波、万塔的羽毛球训练：成人与青少年课程，中文与英文教学，20 年以上执教经验。学员成长图谱、课后反馈与比赛复盘。";
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
   title: {
-    default: "Goodminton Academy | Badminton Coaching in Finland",
+    // 这是**中文页**的标题——中文页是 x-default，主力客群是在芬兰的华人。
+    // 原来这里是一行纯英文，等于让搜「赫尔辛基羽毛球教练」的人看到一行读不出
+    // 需求的英文。英文版的标题在 app/en 自己覆盖，不受这里影响。
+    default: "赫尔辛基羽毛球教练 | 成人与青少年培训 | Goodminton Academy",
     template: "%s | Goodminton Academy",
   },
   description: siteDescription,
