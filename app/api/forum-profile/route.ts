@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { validateForumNickname } from '@/lib/forum-nickname';
-import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { resolveStudentLogin } from '@/lib/student-login';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
@@ -16,17 +15,8 @@ export async function POST(req: Request) {
     nickname?: unknown;
   } | null;
 
-  const rateLimit = checkRequestRateLimit(req, 'student-credential', body?.credential, {
-    windowMs: 10 * 60 * 1000,
-    maxPerIp: 30,
-  });
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: '尝试次数过多，请稍后再试。' },
-      { status: 429, headers: { ...NO_STORE_HEADERS, 'retry-after': String(rateLimit.retryAfterSeconds) } },
-    );
-  }
-
+  // 2026-08-11 移除限流：按 IP 计数会把同一场馆 WiFi / 运营商 CGNAT 后面的
+  // 学员算成同一个人，正常使用就被挡在门外。防扫号另行处理。
   const { studentId } = resolveStudentLogin(body?.credential);
   if (!studentId) {
     return NextResponse.json({ error: '请先在学员页登录。' }, { status: 401, headers: NO_STORE_HEADERS });

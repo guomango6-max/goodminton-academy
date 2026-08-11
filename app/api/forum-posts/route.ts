@@ -9,7 +9,6 @@
 import { NextResponse } from 'next/server';
 import { getStudentEntry } from '@/lib/student-directory';
 import { resolveStudentLogin } from '@/lib/student-login';
-import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { staffAuthorization, writeAdminAudit } from '@/lib/admin-auth';
 
@@ -74,18 +73,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
 
-  const rawCredential = body?.credential || `${body?.studentId || ''}${body?.accessCode || ''}`;
-  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
-    windowMs: 10 * 60 * 1000,
-    maxPerIp: 30,
-  });
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: '尝试次数过多，请稍后再试。' },
-      { status: 429, headers: { ...NO_STORE_HEADERS, 'retry-after': String(rateLimit.retryAfterSeconds) } },
-    );
-  }
-
+  // 2026-08-11 移除限流：按 IP 计数会误伤同网学员，见 forum-profile 同注。
   // 身份只从凭据来，不看客户端传的 studentId / 名字。
   const { studentId } = body?.credential
     ? resolveStudentLogin(body.credential)
@@ -185,17 +173,6 @@ export async function DELETE(req: Request) {
       });
     }
     return NextResponse.json({ ok: true, by: 'coach' }, { headers: NO_STORE_HEADERS });
-  }
-
-  const rateLimit = checkRequestRateLimit(req, 'student-credential', body?.credential, {
-    windowMs: 10 * 60 * 1000,
-    maxPerIp: 30,
-  });
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: '尝试次数过多，请稍后再试。' },
-      { status: 429, headers: { ...NO_STORE_HEADERS, 'retry-after': String(rateLimit.retryAfterSeconds) } },
-    );
   }
 
   const { studentId } = body?.credential

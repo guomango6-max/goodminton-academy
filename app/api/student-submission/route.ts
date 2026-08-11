@@ -26,31 +26,10 @@ type StudentSubmissionPayload = {
 };
 
 const NTFY_TOPIC = process.env.GOODMINTON_STUDENT_NTFY_TOPIC || process.env.NTFY_TOPIC || 'goodminton-feedback-ef27280b6181';
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const RATE_LIMIT_MAX = 30;
-const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+// 2026-08-11 移除限流：按 IP 计数会误伤同网学员，见 forum-profile 同注。
 
 function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function getClientKey(req: Request, studentId: string) {
-  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  const realIp = req.headers.get('x-real-ip')?.trim();
-  return `${forwarded || realIp || 'unknown'}:${studentId || 'unknown'}`;
-}
-
-function isRateLimited(key: string) {
-  const now = Date.now();
-  const current = rateLimitBuckets.get(key);
-
-  if (!current || current.resetAt <= now) {
-    rateLimitBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  current.count += 1;
-  return current.count > RATE_LIMIT_MAX;
 }
 
 function normalizeSubmission(value: StudentSubmissionPayload) {
@@ -238,10 +217,6 @@ export async function POST(req: Request) {
 
   if (mode === 'update' && !cleanText(raw.id)) {
     return NextResponse.json({ error: 'Update requires an existing submission id.' }, { status: 400 });
-  }
-
-  if (isRateLimited(getClientKey(req, submission.studentId))) {
-    return NextResponse.json({ error: 'Too many submissions. Please wait and try again.' }, { status: 429 });
   }
 
   const hasLessonContent =

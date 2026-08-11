@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { resolveStudentLogin } from '@/lib/student-login';
-import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 type StudentSubmissionRow = {
@@ -21,18 +20,7 @@ export async function POST(req: Request) {
     accessCode?: string;
   } | null;
 
-  const rawCredential = body?.credential || `${body?.studentId || ''}${body?.accessCode || ''}`;
-  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
-    windowMs: 10 * 60 * 1000,
-    maxPerIp: 30,
-  });
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: 'Too many attempts. Try again later.' },
-      { status: 429, headers: { 'retry-after': String(rateLimit.retryAfterSeconds) } },
-    );
-  }
-
+  // 2026-08-11 移除限流：按 IP 计数会误伤同网学员，见 forum-profile 同注。
   const { studentId } = body?.credential
     ? resolveStudentLogin(body.credential)
     : resolveStudentLogin(body?.studentId, body?.accessCode);

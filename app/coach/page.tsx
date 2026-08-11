@@ -14,6 +14,7 @@
 // /coach is disallowed in robots.ts.
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { resolveExcerpt } from '@/lib/peer-feed-excerpt';
 
 const TOKEN_KEY = 'goodminton-coach-token';
 
@@ -28,6 +29,20 @@ type Submission = {
   featured_category: string | null;
   featured_tier: string | null;
   coach_feedback: string | null;
+  payload?: unknown;
+  featured_excerpt?: unknown;
+};
+
+// 学员原文在墙上、翻译里、教练台里必须取同一批字段，否则看到的和发出去的不是一份。
+const EXCERPT_LABELS: Record<string, string> = {
+  title: '课程',
+  reflection: '课后总结',
+  question: '想学 / 提问',
+  match: '比赛',
+  score: '比分',
+  whatWorked: '打得好的',
+  nextAdjustment: '下次调整',
+  experience: '整体感受',
 };
 
 type PendingComment = {
@@ -375,6 +390,77 @@ function MessageDesk({ call, onError }: { call: CallFn; onError: (message: strin
   );
 }
 
+// 公开点评。写在这里的字对全体学员可见，和学员原文一起显示在墙上；
+// 只给一个人看的话走上面的私信。复用 /api/student-history/coach-feedback，
+// 它本来就存在，只是教练台一直没接上——所以点评过去只能手敲 curl。
+function CoachFeedbackEditor({
+  submission,
+  call,
+  onSaved,
+  onError,
+}: {
+  submission: Submission;
+  call: CallFn;
+  onSaved: () => void;
+  onError: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(submission.coach_feedback || '');
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    const text = draft.trim();
+    if (!text) return;
+    setBusy(true);
+    try {
+      await call('/api/student-history/coach-feedback', {
+        method: 'POST',
+        body: { recordId: submission.external_id, coachFeedback: text, coachLiked: true },
+      });
+      setOpen(false);
+      onSaved();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : '保存点评失败');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-2 rounded-lg border border-[#cfe3d6] px-3 py-1.5 text-xs font-semibold text-[#0e6f4d]"
+      >
+        {submission.coach_feedback ? '改点评' : '写点评（公开）'}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-2 rounded-md border border-[#cfe3d6] bg-white p-2.5">
+      <textarea
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        rows={4}
+        className={input('resize-y')}
+        placeholder="教练点评——全体学员可见。只给这一个人看的话用私信。"
+        maxLength={1200}
+      />
+      <div className="flex items-center gap-2">
+        <button type="button" disabled={busy || !draft.trim()} onClick={save} className={button()}>
+          {busy ? '保存中…' : '保存点评'}
+        </button>
+        <button type="button" onClick={() => { setOpen(false); setDraft(submission.coach_feedback || ''); }} className="text-xs text-slate-500">
+          取消
+        </button>
+        <span className="text-xs text-slate-400">{draft.length}/1200</span>
+      </div>
+    </div>
+  );
+}
+
 function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: string) => void }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [openId, setOpenId] = useState('');
@@ -467,7 +553,39 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
                   <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700">尚无点评</span>
                 )}
               </div>
-              {submission.title ? <p className="mt-1 text-sm text-slate-800">{submission.title}</p> : null}
+              {submission.title ? <p className="mt-1 text-sm font-medium text-slate-800">{submission.title}</p> : null}
+
+              {(() => {
+                const excerpt = resolveExcerpt(submission.record_type, submission.featured_excerpt, submission.payload);
+                const entries = Object.entries(excerpt).filter(([key, value]) => key !== 'title' && value);
+                if (entries.length === 0) {
+                  return <p className="mt-1 text-xs text-slate-400">（这条没有正文）</p>;
+                }
+                return (
+                  <div className="mt-2 space-y-1.5 rounded-md bg-[#faf9f4] p-2.5">
+                    {entries.map(([key, value]) => (
+                      <div key={key}>
+                        <p className="text-[11px] font-semibold text-slate-500">{EXCERPT_LABELS[key] || key}</p>
+                        <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {submission.coach_feedback ? (
+                <div className="mt-2 rounded-md border border-[#cfe3d6] bg-[#f4f8f1] p-2.5">
+                  <p className="text-[11px] font-semibold text-[#0e6f4d]">已有点评（公开）</p>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{submission.coach_feedback}</p>
+                </div>
+              ) : null}
+
+              <CoachFeedbackEditor
+                submission={submission}
+                call={call}
+                onSaved={load}
+                onError={onError}
+              />
 
               <div className="mt-2 flex gap-2">
                 {submission.featured ? (
@@ -516,7 +634,7 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
                     </p>
                   ) : (
                     <p className="text-xs text-amber-700">
-                      这条还没有教练点评，墙上只会显示学员原文。
+                      这条还没有教练点评，墙上只会显示学员原文。可以先在上面写点评再精选。
                     </p>
                   )}
                   <label className="flex items-center gap-2 text-xs text-slate-600">

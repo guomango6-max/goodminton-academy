@@ -7,39 +7,10 @@ import { NextResponse } from 'next/server';
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
 
-// Lightweight abuse guards. Protects the open chat endpoint from burning
-// DeepSeek quota and spamming ntfy. In-process only (per serverless instance);
-// good enough for current traffic, swap for a shared store if it scales.
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 12;
+// 2026-08-11 移除按 IP 的请求限流：它把同一场馆 WiFi / 运营商 CGNAT 后面的
+// 访客算成同一个人，正常使用被挡。用的是免费额度，刷完再申请。
+// 单次请求的字数上限保留——那是载荷保护，不是限流。
 const MAX_TOTAL_CHARS = 8_000;
-
-const rateLimitBuckets = new Map<string, number[]>();
-
-function getClientId(req: Request) {
-  const forwarded = req.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return req.headers.get('x-real-ip') || 'unknown';
-}
-
-function isRateLimited(clientId: string) {
-  const now = Date.now();
-  const recent = (rateLimitBuckets.get(clientId) || []).filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
-    rateLimitBuckets.set(clientId, recent);
-    return true;
-  }
-  recent.push(now);
-  rateLimitBuckets.set(clientId, recent);
-
-  // Opportunistic cleanup so the map does not grow unbounded.
-  if (rateLimitBuckets.size > 5_000) {
-    for (const [key, stamps] of rateLimitBuckets) {
-      if (stamps.every((ts) => now - ts >= RATE_LIMIT_WINDOW_MS)) rateLimitBuckets.delete(key);
-    }
-  }
-  return false;
-}
 
 function totalMessageChars(messages: ChatRequestMessage[]) {
   let total = 0;
@@ -284,13 +255,6 @@ export async function POST(req: Request) {
 
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return NextResponse.json({ error: 'messages must be a non-empty array.' }, { status: 400 });
-  }
-
-  if (isRateLimited(getClientId(req))) {
-    return NextResponse.json(
-      { error: '请求太频繁，请稍等一会儿再试。' },
-      { status: 429, headers: { 'retry-after': '60' } },
-    );
   }
 
   if (totalMessageChars(body.messages) > MAX_TOTAL_CHARS) {

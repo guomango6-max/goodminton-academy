@@ -8,7 +8,6 @@
 import { NextResponse } from 'next/server';
 import { isPeerFeedCategory } from '@/lib/peer-feed-types';
 import { resolveStudentLogin } from '@/lib/student-login';
-import { checkRequestRateLimit } from '@/lib/request-rate-limit';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { staffAuthorization, writeAdminAudit } from '@/lib/admin-auth';
 import { buildFeaturedTranslation } from '@/lib/featured-translation';
@@ -92,8 +91,10 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase
     .from('student_history_records')
+    // payload / featured_excerpt 必须带上：教练台要显示学员写的原文，
+    // 只给标题的话没法判断这条值不值得精选，也没法照着写点评。
     .select(
-      'external_id, student_id, record_type, title, happened_at, created_at, featured, featured_angle, featured_category, featured_tier, coach_feedback',
+      'external_id, student_id, record_type, title, happened_at, created_at, featured, featured_angle, featured_category, featured_tier, coach_feedback, payload, featured_excerpt',
     )
     .order('created_at', { ascending: false })
     .limit(100);
@@ -244,18 +245,7 @@ export async function DELETE(req: Request) {
   }
 
   // Path B: student credential → allowed only on their own record.
-  const rawCredential = body.credential || `${body.studentId || ''}${body.accessCode || ''}`;
-  const rateLimit = checkRequestRateLimit(req, 'student-credential', rawCredential, {
-    windowMs: 10 * 60 * 1000,
-    maxPerIp: 30,
-  });
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: 'Too many attempts. Try again later.' },
-      { status: 429, headers: { 'retry-after': String(rateLimit.retryAfterSeconds) } },
-    );
-  }
-
+  // 2026-08-11 移除限流：按 IP 计数会误伤同网学员，见 forum-profile 同注。
   const { studentId } = body.credential
     ? resolveStudentLogin(body.credential)
     : resolveStudentLogin(body.studentId, body.accessCode);
