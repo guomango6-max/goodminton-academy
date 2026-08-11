@@ -229,6 +229,9 @@ const studentCopy = {
     collapse: '收起',
     saved: '已保存',
     saving: '保存中...',
+    whichLesson: '这次总结的是哪节课',
+    lessonToday: '今天的课',
+    lessonYesterday: '昨天的课',
     editingLesson: '正在修改一条课后总结',
     editingMatch: '正在修改一条比赛复盘',
     coachFeedback: '教练点评',
@@ -349,6 +352,9 @@ const studentCopy = {
     collapse: 'Collapse',
     saved: 'Saved',
     saving: 'Saving...',
+    whichLesson: 'Which session is this about',
+    lessonToday: "Today's session",
+    lessonYesterday: "Yesterday's session",
     editingLesson: 'Editing one lesson summary',
     editingMatch: 'Editing one match review',
     coachFeedback: 'Coach Feedback',
@@ -2196,6 +2202,31 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
     displayStudent.stage?.title ||
     displayStudent.lessonSummary?.title ||
     '';
+  // 这次总结挂到哪节课。默认今天；学员隔天补写就选"昨天"，或直接从课次列表里挑。
+  // 以前这里没有任何输入，date 取建档时写死的字段、title 取当前训练重点，
+  // 结果同一学员每条提交都盖着同一个日期和标题。
+  const [lessonChoice, setLessonChoice] = useState('today');
+
+  const lessonOptions = (displayStudent.lessonHistory || [])
+    .filter((lesson) => lesson?.date)
+    .slice(0, 8);
+
+  function resolveLesson() {
+    const day = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      return d.toISOString().slice(0, 10);
+    };
+    if (lessonChoice === 'today') return { date: day(0), title: currentTrainingFocus };
+    if (lessonChoice === 'yesterday') return { date: day(1), title: currentTrainingFocus };
+    const picked = lessonOptions.find((lesson) => lesson.id === lessonChoice);
+    return picked
+      ? { date: picked.date, title: picked.title || currentTrainingFocus }
+      : { date: day(0), title: currentTrainingFocus };
+  }
+
+  const resolvedLesson = resolveLesson();
+
   const draftKey = `goodminton-student-draft-${displayStudent.studentId}`;
   const logKey = `goodminton-student-submission-log-${displayStudent.studentId}`;
   const progressValue = displayStudent.progress || 0;
@@ -2262,6 +2293,7 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
 
   function buildSubmissionLog(submissionType: 'lesson' | 'match'): StudentSubmissionLog {
     const submittedAt = new Date().toISOString();
+    const resolvedLesson = resolveLesson();
     return {
       id: `${displayStudent.studentId}-${submittedAt}`,
       submissionType,
@@ -2269,8 +2301,13 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
       studentName: displayStudent.name,
       submittedAt,
       lessonSummary: {
-        date: displayStudent.lessonSummary?.date,
-        title: currentTrainingFocus,
+        // 2026-08-11：日期和标题都改成跟着学员选的课次走（见 resolveLesson）。
+        // 原来 date 取 data/students/*.json 里建档时写死的字段、title 取当前
+        // 训练重点，表单又没有任何输入，于是同一学员每条提交都盖着同一个日期
+        // 和标题（薛美姣三条全是 2026-05-07「高远球深度控制」，杨静南八条全是
+        // 2026-05-13「封网闭合与后场中国跳衔接」）。
+        date: resolvedLesson.date,
+        title: resolvedLesson.title,
         studentReflection: lessonInput.studentReflection.trim(),
         question: lessonInput.question.trim(),
         confidence: Number(lessonInput.confidence),
@@ -2591,6 +2628,26 @@ function StudentDashboard({ student, onLogout }: { student: StudentData; onLogou
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
             <Section id="student-section-1" title={t.lessonSummary}>
               <div className="space-y-4">
+                <label className="block">
+                  <div className="text-sm font-medium">{t.whichLesson}</div>
+                  <select
+                    value={lessonChoice}
+                    onChange={(event) => setLessonChoice(event.target.value)}
+                    className="mt-2 w-full rounded-md border border-[#cfe8d9] bg-white px-3 py-2 text-base outline-none focus:border-[#16845f] sm:text-sm"
+                  >
+                    <option value="today">{t.lessonToday}</option>
+                    <option value="yesterday">{t.lessonYesterday}</option>
+                    {lessonOptions.map((lesson) => (
+                      <option key={lesson.id} value={lesson.id}>
+                        {lesson.date} · {(lesson.title || '').slice(0, 28)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {resolvedLesson.date}
+                    {resolvedLesson.title ? ` · ${resolvedLesson.title}` : ''}
+                  </div>
+                </label>
                 <label className="block">
                   <div className="text-sm font-medium">{t.lessonReflection}</div>
                   <textarea
