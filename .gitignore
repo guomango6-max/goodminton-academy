@@ -63,3 +63,7 @@ next-env.d.ts
 # local browser smoke-test profiles
 /.tmp-chrome-profile/
 /.tmp-chrome-test/
+
+# 外部抓取的原始材料（字幕、yt-dlp 产物、审计稿）。体积大、可重新抓取，
+# 而且是第三方内容，不进版本库。
+/tmp/
