@@ -30,10 +30,11 @@ for (const [rawCredential, studentId] of Object.entries(generatedCredentials)) {
   addCredential(credentials, rawCredential, studentId);
 }
 
+// 只认 loginId，和 lib/student-login.ts 保持一致。
+// 以前这里还把 studentId 和 alias 也算成凭据，但生产代码 2026-08-01 就不认了，
+// 校验脚本一直在验一个比线上更宽的集合——那样它验的是别的东西。
 for (const student of manifest) {
   addCredential(credentials, student.loginId, student.studentId);
-  addCredential(credentials, student.studentId, student.studentId);
-  addCredential(credentials, student.alias, student.studentId);
 }
 
 const errors = [];

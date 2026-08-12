@@ -7,60 +7,6 @@ type StudentManifestEntry = {
   loginId?: string;
 };
 
-const LEGACY_STUDENT_LOGIN_CREDENTIALS: Record<string, string> = {
-  demo: 'demo',
-  sami09: 'sami',
-  gyw11: 'guo-yiwei',
-  gyw1: 'guo-yiwei',
-  gyw1122: 'guo-yiwei',
-  guoyiwei11: 'guo-yiwei',
-  guoyiwei1122: 'guo-yiwei',
-  郭一苇11: 'guo-yiwei',
-  郭一苇1122: 'guo-yiwei',
-  lcr22: 'li-chenrun',
-  lcr2: 'li-chenrun',
-  lcr2233: 'li-chenrun',
-  lichenrun22: 'li-chenrun',
-  lichenrun2233: 'li-chenrun',
-  李晨润22: 'li-chenrun',
-  李晨润2233: 'li-chenrun',
-  sxy33: 'sheng-xinyi',
-  sxy3: 'sheng-xinyi',
-  sxy3344: 'sheng-xinyi',
-  shengxinyi33: 'sheng-xinyi',
-  shengxinyi3344: 'sheng-xinyi',
-  盛心怡33: 'sheng-xinyi',
-  盛心怡3344: 'sheng-xinyi',
-  盛欣怡33: 'sheng-xinyi',
-  盛欣怡3344: 'sheng-xinyi',
-  xmj44: 'xue-meijiao',
-  xmj4: 'xue-meijiao',
-  xmj4455: 'xue-meijiao',
-  xuemeijiao44: 'xue-meijiao',
-  xuemeijiao4455: 'xue-meijiao',
-  薛美姣44: 'xue-meijiao',
-  薛美姣4455: 'xue-meijiao',
-  yjn48: 'yang-jingnan',
-  yjn8: 'yang-jingnan',
-  yjn4837: 'yang-jingnan',
-  yangjingnan48: 'yang-jingnan',
-  yangjingnan4837: 'yang-jingnan',
-  杨静南48: 'yang-jingnan',
-  杨静南4837: 'yang-jingnan',
-  grh46: 'guo-renhua',
-  cyh33: 'cui-yunhao',
-  wm45: 'wang-meng',
-  zbq48: 'zhang-biqiong',
-  zcq40: 'zhang-cuiqi',
-  zx40: 'zhao-xin',
-  abih30: 'abih',
-  abiw30: 'abih-wife',
-  jy47: 'jin-yan',
-  lsq40: 'lu-shiqiong',
-  rishi40: 'rishi',
-  xkl13: 'xiaokonglong',
-};
-
 let loginCredentialsCache: Record<string, string> | null = null;
 
 export function normalizeLoginCredential(value: unknown) {
@@ -107,6 +53,21 @@ function addManifestCredentials(credentials: Record<string, string>) {
   }
 }
 
+// 2026-08-11：别名不再用于登录，一人一码。
+//
+// 此前每个学员有多种写法都能登：首字母+数字、全拼+数字、中文名+数字，甚至
+// 错别字变体（盛欣怡/盛心怡）。29 人对应 132 个有效凭据。
+//
+// 去掉的理由不是省事，是这些别名本身就是从姓名推导出来的——知道名字的人
+// 等于知道了字母部分，只剩两位数字要猜。别名越多，猜中的路径越多，而登录
+// 码本来就被定性为半公开。方向和 2026-08-01 移除 studentId/alias 一致，
+// 这次收完最后一段。
+//
+// 代价说清楚：15 名学员的 52 个别名当场失效，他们存在浏览器里的登录态也会
+// 因为凭据不再有效而被清掉，需要用 manifest 里的唯一 loginId 重新登录。
+// data/student-login-credentials.json 是例外通道：给还没写进 manifest loginId
+// 的学员临时发码用，平时应为空 {}。注意这里没有过滤——文件里写什么都会变成
+// 一个有效凭据，所以别往里放注释键。
 function addGeneratedCredentials(credentials: Record<string, string>) {
   const generated = readJsonFile<Record<string, string>>(join(process.cwd(), 'data', 'student-login-credentials.json'));
   if (!generated || typeof generated !== 'object' || Array.isArray(generated)) return;
@@ -120,10 +81,6 @@ export function getStudentLoginCredentials() {
   if (loginCredentialsCache) return loginCredentialsCache;
 
   const credentials: Record<string, string> = {};
-
-  for (const [rawCredential, studentId] of Object.entries(LEGACY_STUDENT_LOGIN_CREDENTIALS)) {
-    addCredential(credentials, rawCredential, studentId);
-  }
 
   addGeneratedCredentials(credentials);
   addManifestCredentials(credentials);
