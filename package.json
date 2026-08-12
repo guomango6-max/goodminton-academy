@@ -23,6 +23,8 @@
     "students:sync:dry": "node scripts/sync-students-from-obsidian.mjs --dry-run && node scripts/backfill-student-history-to-supabase.mjs --dry-run",
     "students:backfill-history": "node scripts/backfill-student-history-to-supabase.mjs",
     "students:check-logins": "node scripts/check-student-login-registry.mjs",
+    "students:upload-profiles": "node scripts/upload-students-to-supabase.mjs",
+    "students:upload-profiles:dry": "node scripts/upload-students-to-supabase.mjs --dry-run",
     "forum:archive": "node scripts/import-forum-archive.mjs"
   },
   "dependencies": {

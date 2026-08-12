@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { NextResponse } from 'next/server';
 import { resolveStudentLogin } from '@/lib/student-login';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 const NO_STORE_HEADERS = {
   'cache-control': 'no-store, no-cache, max-age=0, must-revalidate',
@@ -38,9 +39,49 @@ const singleStudentCache = new Map<string, Record<string, unknown>>();
 const fileStudentCache = new Map<string, Record<string, unknown>>();
 const driveStudentCache = new Map<string, Record<string, unknown>>();
 const sheetStudentCache = new Map<string, { student: Record<string, unknown>; expiresAt: number }>();
+const supabaseStudentCache = new Map<string, { student: Record<string, unknown>; expiresAt: number }>();
 let envStudentCacheRaw = '';
 let envStudentCache: Record<string, Record<string, unknown>> | Array<Record<string, unknown>> | null = null;
 let googleAccessTokenCache: { token: string; expiresAt: number } | null = null;
+
+// 学员档案的新家。过渡期与 Sheet 并存：这里优先，取不到再回退 Sheet。
+//
+// 表定义见 supabase/migrations/20260811120000_student_profiles.sql。
+// 只能用 service role 读——payload 里有 accessCode，表上开了 RLS 且没有任何
+// policy，anon key 读不到。
+async function getStudentFromSupabase(studentId: string) {
+  const cached = supabaseStudentCache.get(studentId);
+  if (cached && cached.expiresAt > Date.now()) return cached.student;
+
+  const client = createSupabaseAdminClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from('student_profiles')
+      .select('payload')
+      .eq('student_id', studentId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[student-data-supabase-error]', error.message);
+      return null;
+    }
+    const student = data?.payload;
+    if (!student || typeof student !== 'object' || Array.isArray(student) || !('studentId' in student)) {
+      return null;
+    }
+
+    const studentRecord = student as Record<string, unknown>;
+    // 缓存 10 分钟，不是 Sheet 那样的 60 秒：查自己的库便宜得多，而学员档案
+    // 也不是高频变动的数据——改一次档案到学员看见，延迟几分钟完全可接受。
+    supabaseStudentCache.set(studentId, { student: studentRecord, expiresAt: Date.now() + 600000 });
+    return studentRecord;
+  } catch (error) {
+    console.error('[student-data-supabase-fetch-error]', error);
+    return null;
+  }
+}
 
 async function getStudentFromSheet(studentId: string) {
   const endpoint = process.env.GOODMINTON_STUDENT_SHEET_ENDPOINT;
@@ -283,6 +324,22 @@ async function getStudentFromFile(studentId: string) {
 }
 
 async function getStudentById(studentId: string) {
+  // demo 是仓库内 fixture，不进 Supabase。
+  if (studentId === 'demo' && isSafeStudentFileId(studentId)) {
+    try {
+      const fileStudent = await getStudentFromFile(studentId);
+      if (fileStudent) return fileStudent;
+    } catch {
+      // Fall through to remote backups.
+    }
+  }
+
+  // 2026-08-11 起：Supabase 优先。
+  const supabaseStudent = await getStudentFromSupabase(studentId);
+  if (supabaseStudent) return supabaseStudent;
+
+  // 本地 JSON 只作兜底。仓库里仍有少数学员文件被历史提交跟踪；如果把这段放在
+  // Supabase 前面，这几位学员会永远绕过新数据源，形成两套行为。
   if (isSafeStudentFileId(studentId)) {
     try {
       const fileStudent = await getStudentFromFile(studentId);
@@ -292,8 +349,16 @@ async function getStudentById(studentId: string) {
     }
   }
 
+  // 过渡期兜底。Supabase 侧数据齐了、这行日志连续几天不再出现之后，
+  // 就可以把 Sheet 这一整条（含 GOODMINTON_STUDENT_SHEET_* 两个环境变量、
+  // upload-students-to-google-sheet.mjs）一起删掉。
+  //
+  // 在 Vercel 日志里 grep 这个前缀就能知道还有没有人在走老路。
   const sheetStudent = await getStudentFromSheet(studentId);
-  if (sheetStudent) return sheetStudent;
+  if (sheetStudent) {
+    console.warn('[student-data-sheet-fallback]', studentId);
+    return sheetStudent;
+  }
 
   const driveStudent = await getStudentFromDrive(studentId);
   if (driveStudent) return driveStudent;

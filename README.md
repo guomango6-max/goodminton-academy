@@ -44,6 +44,13 @@ npm run students:check-logins
 
 `students:check-logins` 会检查 manifest、登录注册表和学员 JSON 是否一致。
 
+学员档案从 Obsidian 同步到本地 JSON 后，先 dry-run，再上传 Supabase：
+
+```powershell
+npm run students:upload-profiles:dry
+npm run students:upload-profiles
+```
+
 ## 主要目录
 
 - `app/`：页面和服务端 API
@@ -62,13 +69,14 @@ npm run students:check-logins
 - `SUPABASE_SERVICE_ROLE_KEY`：仅服务端使用，禁止加 `NEXT_PUBLIC_` 前缀
 - `GOODMINTON_COACH_ACTION_TOKEN`：保护 `/coach` 发起的写操作
 
-学员数据还可以按部署方式使用 Google Sheet、Drive 或压缩环境变量；具体变量名以
+学员档案主存储为 Supabase `public.student_profiles`，应用仅通过服务端 service role 读取。
+Google Sheet、Drive、本地文件或压缩环境变量暂作故障兜底；具体变量名和优先级以
 `app/api/student-data/route.ts` 为准。不要把任何 `.env*`、令牌或 service role key 提交到 Git。
 
 ## 数据与安全边界
 
-- 所有公开 schema 业务表均启用 RLS；应用通过服务端 service role 访问，并撤销新论坛表的
-  `anon` / `authenticated` 权限。
+- 所有公开 schema 业务表均启用 RLS；应用通过服务端 service role 访问，并撤销
+  `student_profiles` 与论坛私有业务表的 `anon` / `authenticated` 权限。
 - 学员身份目前仍是短登录码，不等同于高强度账户系统。接口有最低限度的进程内限流，
   但站内消息仍只适合普通训练沟通，不应承载伤病、家庭或其他敏感信息。
 - 论坛发帖署名由服务端学员目录生成，客户端不能自定义冒用他人姓名。

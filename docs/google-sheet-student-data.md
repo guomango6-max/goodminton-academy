@@ -1,6 +1,10 @@
-# Google Sheet Student Data Setup
+# Google Sheet Student Data（Legacy Fallback）
 
-This setup keeps student data in your Google Sheet. The website reads through an Apps Script Web App, and the local upload script writes rows from `data/students/*.json`.
+> 2026-08-12：Google Sheet 已降为故障兜底。学员档案主存储是 Supabase
+> `public.student_profiles`，正式上传命令是 `npm run students:upload-profiles`。
+> 只有在 Supabase 读取失败时，网站才继续尝试本页的 Apps Script Web App。
+
+This legacy setup keeps a fallback copy of student data in Google Sheet. The local upload script writes rows from `data/students/*.json`.
 
 ## Sheet
 
