@@ -67,9 +67,16 @@ h6 {
     font-size: 16px;
   }
 
+  /* 中文阅读行宽上限。原来写的是 width + max-width: min(300px, 100vw - 40px)，
+     按**视口**算宽度——顶层段落没问题，但嵌套在窄容器里的元素也被强制成
+     300px，不管自己实际只有多宽。学员精华墙的卡片标题可用宽度只有 171px，
+     被撑到 300px，超出的 129px 被外层 overflow-x-hidden 裁掉：手机上标题
+     是被切掉的，而且没有横向滚动条，看不出来。375px 屏上有 20 个元素中招。
+
+     改成 min(300px, 100%)：宽容器里仍然给 300px 的阅读行宽（原意图不变），
+     窄容器里跟随容器。width 一并去掉——width 是强制，max-width 才是上限。 */
   .goodminton-zh .cjk-wrap {
-    width: min(300px, calc(100vw - 40px));
-    max-width: min(300px, calc(100vw - 40px)) !important;
+    max-width: min(300px, 100%);
   }
 }
 
