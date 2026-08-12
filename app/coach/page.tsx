@@ -556,8 +556,12 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
         <h2 className="text-sm font-semibold text-slate-900">
           待处理{pending.length ? `（${pending.length}）` : ''}
         </h2>
-        <span className="text-xs text-slate-500">没写点评、也没上墙的</span>
+        <span className="text-xs text-slate-500">网站新提交默认进入这里</span>
       </div>
+
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        这里是教练审核队列，不是公开墙。未写点评、也未人工精选的提交会留在这里；不会自动公开。
+      </p>
 
       {pending.length === 0 ? (
         <p className="mt-3 text-sm text-slate-500">全部处理完了。</p>
