@@ -24,6 +24,22 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // 全站基础安全头。此前线上只有 HSTS（Vercel 默认给的），这几条都没有。
+        // 有 /coach 教练台和 /student 学员页，点击劫持和 MIME 嗅探是实打实的面。
+        // 故意不加 CSP：这站有内联样式和第三方脚本面，CSP 配错会直接白屏，
+        // 要单独一轮按 report-only 先跑数据再上。
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+        ],
+      },
+      {
         source: "/student",
         headers: [
           {

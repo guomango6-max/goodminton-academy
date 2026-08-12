@@ -66,7 +66,11 @@ export function localizedMetadata(options: {
       siteName: 'Goodminton Academy',
       locale: lang === 'en' ? 'en_US' : 'zh_CN',
       publishedTime,
-      images: image ? [{ url: image }] : undefined,
+      // 不传 image 时必须回退到站点主图，不能给 undefined：
+      // Next.js 里页面的 openGraph 会**整体替换**父级的，写了 openGraph 却不写
+      // images，等于把 layout 里的 hero 图抹掉。结果是 /lessons（广告落地页）、
+      // /venues、/en 和所有没配图的文章分享出去都是无图卡片。
+      images: [{ url: image || '/badminton-hero.png' }],
     },
     twitter: {
       card: 'summary_large_image',
