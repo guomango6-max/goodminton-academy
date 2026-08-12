@@ -94,7 +94,10 @@ export async function GET(req: Request) {
     // payload / featured_excerpt 必须带上：教练台要显示学员写的原文，
     // 只给标题的话没法判断这条值不值得精选，也没法照着写点评。
     .select(
-      'external_id, student_id, record_type, title, happened_at, created_at, featured, featured_angle, featured_category, featured_tier, coach_feedback, payload, featured_excerpt',
+      // source 是给教练台「待处理」区用的：只有 source='website' 才是学员自己
+      // 写的提交，'data/students' 是从 Obsidian 库回填的课次记录，没有学员正文，
+      // 混进待处理队列会把 7 条淹在 50 条里。
+      'external_id, student_id, record_type, title, happened_at, created_at, source, featured, featured_angle, featured_category, featured_tier, coach_feedback, payload, featured_excerpt',
     )
     .order('created_at', { ascending: false })
     .limit(100);

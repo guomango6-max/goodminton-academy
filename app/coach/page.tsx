@@ -24,6 +24,11 @@ type Submission = {
   record_type: string;
   title: string | null;
   happened_at: string | null;
+  // 接口一直有返回，只是此前没在类型里声明。待处理区要显示「提交于」，
+  // 因为 happened_at 是课次日期，不是提交时间——学员常常隔天补写。
+  created_at?: string | null;
+  // 'website' = 学员自己写的；'data/students' = 从 Obsidian 库回填的课次记录。
+  source?: string | null;
   featured: boolean | null;
   featured_angle: string | null;
   featured_category: string | null;
@@ -528,7 +533,82 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
     }
   }
 
+  // 待处理 = 没写点评，且没上墙。
+  //
+  // 为什么需要这个区：新提交**不会自动上墙**——peer-feed 里没有教练导读的记录
+  // 直接 return null。所以一条学员总结进了库之后，除非教练主动来看，否则不会
+  // 在任何地方冒头，只能依赖 ntfy 通知，而那条链路不总是可靠。
+  //
+  // 也不打算改成自动发布：四条排除线（教练笔记误入 / 建档占位 / 伤病信息 /
+  // 重复）没有一条机器能可靠判断。2026-08-11 就有现成例子——一条总结里写了
+  // 「训练后小臂疼痛加重」，自动上墙会直接公开。人工闸门要留着，这里只是让
+  // 「有没有新东西」一眼可见。
+  // 只看 source='website'——那才是学员自己写的。'data/students' 是从 Obsidian
+  // 库回填的课次记录，没有学员正文，混进来会把真正要处理的 7 条淹在 50 条里。
+  const pending = submissions.filter(
+    (s) => s.source === 'website' && !s.coach_feedback && !s.featured,
+  );
+
   return (
+    <>
+    <section className={card('mb-3 border-[#d8c9a8] bg-[#fffdf5]')}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold text-slate-900">
+          待处理{pending.length ? `（${pending.length}）` : ''}
+        </h2>
+        <span className="text-xs text-slate-500">没写点评、也没上墙的</span>
+      </div>
+
+      {pending.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500">全部处理完了。</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {pending.map((submission) => {
+            const excerpt = resolveExcerpt(submission.record_type, submission.featured_excerpt, submission.payload);
+            const entries = Object.entries(excerpt).filter(([key, value]) => key !== 'title' && value);
+            const blob = entries.map(([, v]) => v).join(' ');
+            // 只做提示，不做判定——命中了也要人看过再决定。
+            const healthHit = /疼|痛|受伤|拉伤|扭伤|药膏|贴布/.test(blob);
+            const thin = blob.replace(/\s/g, '').length < 25;
+            return (
+              <li key={submission.external_id} className="rounded-lg border border-[#e2ded2] bg-white p-3">
+                <div className="flex flex-wrap items-baseline gap-2 text-xs text-slate-500">
+                  <span className="font-semibold text-slate-800">{submission.student_id}</span>
+                  <span>{submission.record_type === 'match_review' ? '比赛复盘' : '课后总结'}</span>
+                  <span>{submission.happened_at || '—'}</span>
+                  <span className="text-slate-400">提交于 {String(submission.created_at || '').slice(0, 16).replace('T', ' ')}</span>
+                  {healthHit ? (
+                    <span className="rounded bg-[#fdecec] px-1.5 py-0.5 font-semibold text-[#a33]">含健康/伤病字样 · 别上墙</span>
+                  ) : null}
+                  {thin ? (
+                    <span className="rounded bg-[#f1f1f1] px-1.5 py-0.5 text-slate-600">正文很短 · 可能是占位</span>
+                  ) : null}
+                </div>
+                {submission.title ? (
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{submission.title}</p>
+                ) : null}
+                {entries.length === 0 ? (
+                  <p className="mt-2 text-sm text-slate-400">（无正文）</p>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    {entries.map(([key, value]) => (
+                      <div key={key}>
+                        <p className="text-[11px] font-semibold text-slate-500">{EXCERPT_LABELS[key] || key}</p>
+                        <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-slate-400">
+                  处理方式在下面的「精选到学员墙」里：写点评，或写导读后精选。
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+
     <section className={card()}>
       <h2 className="text-sm font-semibold text-slate-900">精选到学员墙（公开）</h2>
       <p className="mt-1 text-xs text-slate-500">
@@ -651,5 +731,6 @@ function FeatureDesk({ call, onError }: { call: CallFn; onError: (message: strin
         </ul>
       )}
     </section>
+    </>
   );
 }
