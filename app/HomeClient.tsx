@@ -52,6 +52,7 @@ const heroFeature: Record<Lang, ArticlePost> = {
     category: '精选',
     excerpt: 'Goodminton Academy 把教练观察、学员感受、训练动作和比赛片段合在一个入口里。重点不是把内容写得更多，而是让每个纠错点都能被下一次训练继续使用。',
     image: '/badminton-hero.png',
+    href: '/articles/open-learning-ai',
   },
   en: {
     title: 'Open learning: what artificial intelligence is changing',
@@ -59,6 +60,7 @@ const heroFeature: Record<Lang, ArticlePost> = {
     category: 'Featured story',
     excerpt: 'AI is not a replacement for the coach. It connects lesson observation, post-training review, and the next practice focus.',
     image: '/article-chat.png',
+    href: '/en/articles/open-learning-ai',
   },
 };
 
@@ -726,7 +728,7 @@ export default function Home({
                 <p className="mt-3 text-[14px] font-semibold text-[#64737a]">{featured.date}</p>
                 <p className="cjk-wrap mt-5 max-w-[520px] text-[16px] leading-8 text-[#52636b]">{featured.excerpt}</p>
                 <a
-                  href="#articles"
+                  href={featured.href}
                   className="link-arrow press mt-6 inline-flex h-10 items-center gap-2 rounded-[6px] border border-[#cfe8d9] bg-white px-4 text-[14px] font-semibold text-[#1f4a38] transition-colors hover:border-[#14bf96]"
                 >
                   {t.featuredReadMore}

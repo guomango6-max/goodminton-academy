@@ -168,7 +168,9 @@ export function toCard(article: ArticleRecord, lang: Lang): ArticleCard {
 
 /** 首页那三张卡。placement: hero 的另有用处，排除。 */
 export async function getHomeArticleCards(): Promise<Record<Lang, ArticleCard[]>> {
-  const articles = (await readAll()).filter((article) => article.placement !== 'hero').slice(0, 3);
+  const articles = (await readAll())
+    .filter((article) => article.placement !== 'hero' && isPublishable(article))
+    .slice(0, 3);
   return {
     zh: articles.map((article) => toCard(article, 'zh')),
     en: articles.map((article) => toCard(article, 'en')),
