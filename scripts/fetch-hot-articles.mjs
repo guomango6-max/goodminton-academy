@@ -4,7 +4,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const defaultSourcesPath = path.join(root, 'scripts', 'hot-article-sources.json');
-const defaultOutDir = path.join(root, 'content', 'articles');
+const defaultOutDir = path.join(root, 'content', 'articles', '_candidates');
 const topicImages = ['/article-free.svg', '/article-chat.png', '/article-megaphone.svg'];
 
 const topicProfiles = [
@@ -211,7 +211,7 @@ function buildMarkdown(topic, items, index, date) {
 
   return {
     filename: `${slug}.md`,
-    content: `---\nautoHotArticle: true\nslug: ${slug}\ndate: ${date.toISOString().slice(0, 10)}\nimage: ${topicImages[index % topicImages.length]}\nhref: "#student-portal"\nzhTitle: ${topic.zhTitle}\nenTitle: "${escapeYaml(topic.enTitle)}"\nzhDate: ${formatZhDate(date)}\nenDate: ${formatEnDate(date)}\nzhCategory: ${topic.zhCategory}\nenCategory: ${topic.enCategory}\nzhExcerpt: ${excerpt.zh}\nenExcerpt: ${excerpt.en}\n---\n\n自动抓取来源：\n\n${sources}\n\n中文写作方向：${topic.zhDirection}\n\nEnglish angle: ${topic.enDirection}\n`,
+    content: `---\nautoHotArticle: true\ncandidateOwner: Growth\ncandidateStatus: inbox\nslug: ${slug}\ndate: ${date.toISOString().slice(0, 10)}\nimage: ${topicImages[index % topicImages.length]}\nhref: "#student-portal"\nzhTitle: ${topic.zhTitle}\nenTitle: "${escapeYaml(topic.enTitle)}"\nzhDate: ${formatZhDate(date)}\nenDate: ${formatEnDate(date)}\nzhCategory: ${topic.zhCategory}\nenCategory: ${topic.enCategory}\nzhExcerpt: ${excerpt.zh}\nenExcerpt: ${excerpt.en}\n---\n\n自动抓取来源：\n\n${sources}\n\n中文写作方向：${topic.zhDirection}\n\nEnglish angle: ${topic.enDirection}\n`,
   };
 }
 

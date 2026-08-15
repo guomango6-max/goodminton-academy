@@ -1,47 +1,52 @@
 # Goodminton Articles
 
-Homepage article cards are loaded from Markdown files in this folder.
+正式文章位于本目录；增长部维护的候选池位于 `_candidates/`。
 
-## How It Works
+## 正式文章
 
-- The homepage API reads `*.md` files in this folder.
-- It sorts them by the `date` field in frontmatter.
-- The homepage shows the latest 3 articles.
-- Older files stay here as the article archive.
+网站通过 `lib/articles.ts` 读取本目录顶层的 `*.md` 文件：
 
-## Daily Hot Articles
+- 完整成稿拥有 `/articles/[slug]` 和 `/en/articles/[slug]` 页面；
+- 首页排除 `placement: hero` 后，按 `date` 倒序显示最新三篇；
+- `_candidates/` 子目录不会被网站读取；
+- 自动热点线索不得直接放在本目录顶层。
 
-The scheduled task `Goodminton Hot Articles` runs:
-
-```powershell
-npm run articles:hot -- --out content\articles
-```
-
-The script writes files named like:
-
-```text
-hot-doubles-first-three-2026-05-16.md
-```
-
-If the task runs multiple times on the same day, it replaces that day's auto-generated hot files. It does not delete older dates.
-
-## Manual Articles
-
-You can also add a manual article by creating a new `.md` file here with this frontmatter:
+正式文章至少需要以下 frontmatter：
 
 ```md
 ---
 slug: my-article-slug
-date: 2026-05-16
+date: 2026-08-15
 image: /article-free.svg
-href: "#student-portal"
 zhTitle: 中文标题
 enTitle: English title
-zhDate: 2026年5月16日
-enDate: May 16, 2026
+zhDate: 2026年8月15日
+enDate: Aug 15, 2026
 zhCategory: 分类
 enCategory: Category
 zhExcerpt: 中文摘要
 enExcerpt: English excerpt
 ---
+
+中文正文。
+
+<!-- goodminton:en -->
+
+English body.
 ```
+
+## 增长部候选池
+
+路径：
+
+```text
+content/articles/_candidates/
+```
+
+自动抓取命令默认只写候选池：
+
+```bash
+npm run articles:hot
+```
+
+候选池的职责、状态流和晋升规则见 `_candidates/README.md`。自动生成文件只是选题线索，不会自动公开，也不会触发 Vercel 部署。

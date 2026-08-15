@@ -1,7 +1,7 @@
 param(
   [string]$TaskName = "Goodminton Hot Articles",
   [string]$ProjectRoot = "D:\Goodminton-website-maintenance\goodminton-academy",
-  [string]$OutDir = "content\articles",
+  [string]$OutDir = "content\articles\_candidates",
   [string]$At = "08:20"
 )
 
