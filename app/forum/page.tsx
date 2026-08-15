@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useLang, type Lang } from '../components/LangContext';
 import ContactFooter from '../components/ContactFooter';
 import type { PeerFeedItem } from '../../lib/peer-feed-types';
+import { getForumPublishedDateLabel, sortForumFeedEntries } from '../../lib/forum-feed-sort.mjs';
 import { validateForumNickname } from '../../lib/forum-nickname';
 import { readStudentCredential, saveStudentSession } from '../../lib/student-session';
 
@@ -488,7 +489,7 @@ function HighlightCard({ item, lang, comments, identity, onNeedIdentity, open, o
   const contentTitle = item.submissionType === 'match'
     ? [item.excerpt.match, item.excerpt.score].filter(Boolean).join(' · ')
     : item.excerpt.title || '';
-  const happenedLabel = item.happenedAt ? item.happenedAt.slice(0, 10) : item.featuredAt.slice(0, 10);
+  const publishedLabel = getForumPublishedDateLabel(item);
   const paragraphs = buildParagraphs(item);
   const totalChars = paragraphs.reduce((sum, p) => sum + p.length, 0);
   const collapseLimit = 180;
@@ -497,7 +498,7 @@ function HighlightCard({ item, lang, comments, identity, onNeedIdentity, open, o
   // 标题优先用教练拟的短标题；没有就退回导读（长，但至少每条不同），
   // 课次标题不能用——它会在多条之间重复。
   const rowTitle = item.title || item.angle;
-  const meta = [categoryLabel, tierLabel, contentTitle, happenedLabel].filter(Boolean).join(' · ');
+  const meta = [categoryLabel, tierLabel, contentTitle, publishedLabel].filter(Boolean).join(' · ');
 
   return (
     <ThreadRow
@@ -983,10 +984,11 @@ export default function ForumPage() {
     setIdentity(null);
   }
 
-  const feedEntries: FeedEntry[] = [
+  const feedEntries: FeedEntry[] = sortForumFeedEntries([
     ...items.map((item): FeedEntry => ({
       source: 'curated',
       kind: item.submissionType,
+      // 精选内容显示的是发布时间；课程发生日在原始学员记录里保留，不参与论坛时间线。
       sortAt: item.featuredAt,
       pinned: Boolean(item.pinned),
       item,
@@ -998,14 +1000,7 @@ export default function ForumPage() {
       pinned: false,
       post,
     })),
-  ]
-    .filter((entry) => activeFilter === 'all' || entry.kind === activeFilter)
-    // 加精置顶永远在最前。接口已经排好了，但这里把精选和自发帖合并后要重排，
-    // 只按时间排会把置顶顺序覆盖掉——刚发的约球帖会压过加精内容。
-    .sort((left, right) => {
-      if (left.pinned !== right.pinned) return left.pinned ? -1 : 1;
-      return right.sortAt.localeCompare(left.sortAt);
-    });
+  ].filter((entry) => activeFilter === 'all' || entry.kind === activeFilter));
 
   const loadPosts = useCallback(async () => {
     try {
