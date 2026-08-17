@@ -16,6 +16,8 @@
 ```md
 ---
 slug: my-article-slug
+status: published
+sourceType: original
 date: 2026-08-15
 image: /article-free.svg
 zhTitle: 中文标题
@@ -34,6 +36,10 @@ enExcerpt: English excerpt
 
 English body.
 ```
+
+- `status: published` 是公开页面的硬门槛；缺失或写成其他状态的文件不会进入首页、文章列表或 sitemap。
+- `sourceType` 使用 `original` 或 `external+original`，并在正文末尾说明外部来源与 Goodminton 原创判断的边界。
+- 所有正式文章必须用 `<!-- goodminton:en -->` 分隔独立的中英文正文；英文页不再回退显示中文正文。
 
 ## 增长部候选池
 

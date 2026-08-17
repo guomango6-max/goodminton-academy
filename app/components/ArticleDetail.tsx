@@ -66,7 +66,7 @@ export default function ArticleDetail({
 }) {
   const t = copy[lang];
   const isEn = lang === 'en';
-  const blocks = parseArticleBody(article.body);
+  const blocks = parseArticleBody(isEn ? article.enBody : article.zhBody);
 
   return (
     <ArticleChrome lang={lang} counterpartHref={articlePath(article.slug, isEn ? 'zh' : 'en')}>

@@ -30,6 +30,8 @@ export type ArticleRecord = {
   image: string;
   href: string;
   placement?: string;
+  status?: string;
+  sourceType?: string;
   /** 由 fetch-hot-articles.mjs 自动生成的「热点线索」，不是成稿。 */
   isAuto: boolean;
   zhTitle: string;
@@ -40,8 +42,21 @@ export type ArticleRecord = {
   enCategory: string;
   zhExcerpt: string;
   enExcerpt: string;
-  body: string;
+  zhBody: string;
+  enBody: string;
 };
+
+export const ENGLISH_BODY_SEPARATOR = '<!-- goodminton:en -->';
+
+export function splitLocalizedBody(body: string) {
+  const separatorIndex = body.indexOf(ENGLISH_BODY_SEPARATOR);
+  if (separatorIndex === -1) return { zh: body.trim(), en: '' };
+
+  return {
+    zh: body.slice(0, separatorIndex).trim(),
+    en: body.slice(separatorIndex + ENGLISH_BODY_SEPARATOR.length).trim(),
+  };
+}
 
 const articlesDirectory = path.join(process.cwd(), 'content', 'articles');
 
@@ -81,12 +96,16 @@ function parseFrontmatter(fileContent: string) {
 function toRecord(frontmatter: Record<string, string>, body: string): ArticleRecord | null {
   if (!REQUIRED_KEYS.every((key) => Boolean(frontmatter[key]))) return null;
 
+  const localizedBody = splitLocalizedBody(body);
+
   return {
     slug: frontmatter.slug,
     date: frontmatter.date,
     image: frontmatter.image,
     href: frontmatter.href || '#student-portal',
     placement: frontmatter.placement,
+    status: frontmatter.status,
+    sourceType: frontmatter.sourceType,
     isAuto: frontmatter.autoHotArticle === 'true',
     zhTitle: frontmatter.zhTitle,
     enTitle: frontmatter.enTitle,
@@ -96,7 +115,9 @@ function toRecord(frontmatter: Record<string, string>, body: string): ArticleRec
     enCategory: frontmatter.enCategory,
     zhExcerpt: frontmatter.zhExcerpt,
     enExcerpt: frontmatter.enExcerpt,
-    body,
+    zhBody: localizedBody.zh,
+    // 自动线索卡没有详情页；旧手写文章在迁移期间保留中文兜底，测试会阻止新遗漏。
+    enBody: localizedBody.en || localizedBody.zh,
   };
 }
 
@@ -108,8 +129,8 @@ function toRecord(frontmatter: Record<string, string>, body: string): ArticleRec
  * 33 个页面推给搜索引擎，等于给自己的域名批量添薄内容和导出链接——那是在
  * 主动伤害排名，不是增加内容。它们继续以卡片形式出现在首页，不给独立页面。
  */
-function isPublishable(article: ArticleRecord) {
-  return !article.isAuto;
+export function isPublishable(article: Pick<ArticleRecord, 'isAuto' | 'status'>) {
+  return !article.isAuto && article.status === 'published';
 }
 
 async function readAll(): Promise<ArticleRecord[]> {

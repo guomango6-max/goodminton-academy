@@ -1,5 +1,7 @@
 ---
 slug: smash-defence-choices
+status: published
+sourceType: original
 date: 2026-05-16
 image: /article-megaphone.svg
 href: "#student-portal"
@@ -22,3 +24,15 @@ enExcerpt: Smash defence is not just getting the shuttle back. Choose block, dri
 - 挑后场：被压迫明显、身体失衡或需要重置站位时使用。
 
 训练时可以先做固定线路，再做二选一，最后加入对手站位判断。
+
+<!-- goodminton:en -->
+
+Smash defence is often misunderstood as simply reacting faster. In training, the more important lesson is that every defensive return should set up the next shot.
+
+The common choices fall into three groups:
+
+- Block to the net: use it when the rear-court attacker’s weight remains back and there is a clear opening at the front.
+- Drive: use it when the height and speed of the incoming shuttle allow a flat reply and your partner is ready to follow up.
+- Lift to the rear court: use it when you are under heavy pressure, off balance, or need time to reset your formation.
+
+Start with fixed patterns, progress to choosing between two options, and finally add a decision based on the opponent’s position.

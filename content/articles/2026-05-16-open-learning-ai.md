@@ -1,5 +1,7 @@
 ---
 slug: open-learning-ai
+status: published
+sourceType: original
 date: 2026-05-16
 placement: hero
 image: /article-chat.png
@@ -52,3 +54,43 @@ AI 的价值，正是在这里出现。
 我们相信，好的运动教育不是追求复杂技术，而是把进步路径变清楚。
 
 让热爱变得有方向，有反馈，有路径。
+
+<!-- goodminton:en -->
+
+We have heard many questions about AI coaching assistants: What can they do? What can’t they do? Will they replace coaches? These questions matter, and they are entirely reasonable.
+
+At Goodminton, our view of AI is clear:
+
+AI is not the training itself, and it is not a substitute for a coach. Players improve through consistent, correct practice with useful feedback.
+
+Learning badminton is never just a matter of understanding an explanation. The split step, contact point, changes of pace, attacking and defensive choices, and doubles positioning all have to be tried, corrected, and repeated on court before they become reliable skills.
+
+Experience keeps showing the same thing: players improve more when they put in the practice and know exactly what to work on next.
+
+That is where AI becomes useful.
+
+It can help players review a session, understand the coach’s feedback, and identify the most important current problem. It can also help coaches organize lesson observations, record each player’s development, and make a complicated training process easier to understand.
+
+But AI cannot replace a coach’s judgement on court.
+
+Badminton coaching is more than passing on information. It involves physical awareness, movement correction, rhythm, and decisions under pressure. A coach sees where a player is actually stuck and helps turn “I understand” into “I can do it.”
+
+At Goodminton, we do not only ask whether a player can give the right answer or explanation with AI support. We care more about another question:
+
+Without a prompt, can the player make a better choice in the next session, on the next rally, or in the next match?
+
+That is real transfer of learning.
+
+We therefore want to build a continuous feedback system:
+
+- During the lesson, the coach observes technique, rhythm, and decisions.
+- After the lesson, AI helps organize the main focus and correction points.
+- In the next session, real performance shows whether progress has been made.
+
+The aim of this loop is not to make training look more “intelligent.” It is to give every session a clearer direction.
+
+Goodminton will keep improving this experience so players can see their development, understand their current level, and know what to practise next—and so coaches can record, analyse, and adjust training plans more efficiently.
+
+We believe good sports education is not about adding complexity. It is about making the path to progress clear.
+
+Give passion direction, feedback, and a path forward.
