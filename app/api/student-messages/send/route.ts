@@ -19,6 +19,10 @@ const NO_STORE_HEADERS = {
 
 const MAX_BODY_LENGTH = 4000;
 
+// 每个会话回给教练台的消息条数上限。够看清来龙去脉，又不会让某一个长会话
+// 把整个收件箱的响应撑大。
+const MAX_THREAD_MESSAGES = 30;
+
 function cleanText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -85,7 +89,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await supabase
     .from('student_messages')
-    .select('student_id, direction, body, created_at, read_at')
+    .select('id, student_id, direction, body, created_at, read_at')
     .order('created_at', { ascending: false })
     .limit(500);
 
@@ -95,12 +99,15 @@ export async function GET(req: Request) {
   }
 
   type Row = {
+    id: string;
     student_id: string;
     direction: 'coach_to_student' | 'student_to_coach';
     body: string;
     created_at: string;
     read_at: string | null;
   };
+
+  type Message = { id: string; from: 'coach' | 'student'; body: string; createdAt: string };
 
   const threads = new Map<
     string,
@@ -114,6 +121,7 @@ export async function GET(req: Request) {
       lastFrom: 'coach' | 'student';
       lastAt: string;
       awaitingCoachReply: boolean;
+      messages: Message[];
     }
   >();
 
@@ -129,9 +137,27 @@ export async function GET(req: Request) {
         lastAt: row.created_at,
         // Rows are newest-first, so the first row per student is the latest one.
         awaitingCoachReply: row.direction === 'student_to_coach',
+        messages: [],
+      });
+    }
+
+    // 整段对话跟着列表一起回去。这 500 行本来就已经取出来了，之前只留每人
+    // 最新一条就全扔了——教练回信时因此只能看见一句截断的预览。带上它们不多
+    // 一次查询、不用把 studentId 塞进 URL、点开会话也不用再等一个请求。
+    // 每个会话封顶 MAX_THREAD_MESSAGES 条，免得一个话痨把响应撑爆。
+    const thread = threads.get(row.student_id);
+    if (thread && thread.messages.length < MAX_THREAD_MESSAGES) {
+      thread.messages.push({
+        id: row.id,
+        from: row.direction === 'coach_to_student' ? 'coach' : 'student',
+        body: row.body,
+        createdAt: row.created_at,
       });
     }
   }
+
+  // 上面是按新→旧堆进去的，翻过来给前端，按时间正序读。
+  for (const thread of threads.values()) thread.messages.reverse();
 
   return NextResponse.json({ threads: [...threads.values()] }, { headers: NO_STORE_HEADERS });
 }

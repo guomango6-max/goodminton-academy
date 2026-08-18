@@ -94,6 +94,7 @@ async function main() {
 
   let ok = 0;
   let pinnedUnsupported = false;
+  let handledUnsupported = false;
   for (const pick of PICKS) {
     const { data: row, error: lookupError } = await supabase
       .from('student_history_records')
@@ -126,18 +127,35 @@ async function main() {
       featured_tier: pick.tier,
     };
 
+    // 上墙即已处理。不写这个的话，教练台的待处理队列会把一条已经公开在墙上的
+    // 记录继续列出来（判定见 app/coach/page.tsx 的 isPending）——
+    // /api/student-submission/feature 那条路径是写了的，只有本脚本漏了。
+    // 列是后加的（20260813120000），库里没有时整份 update 会失败，所以和
+    // featured_pinned 一样单独降级，不能让它拖垮上墙本身。
+    const withHandled = { ...base, coach_handled_at: new Date().toISOString() };
+
     // 置顶列是后加的。库里还没跑 2026-08-02_featured_pinned 时退回不带它，
     // 内容照样上墙，等 ALTER 跑完重跑本脚本即可补上置顶。
     let { error } = await supabase
       .from('student_history_records')
-      .update({ ...base, featured_pinned: Boolean(pick.pinned) })
+      .update({ ...withHandled, featured_pinned: Boolean(pick.pinned) })
       .eq('external_id', pick.recordId);
 
+    // 逐级降级：缺 featured_pinned 就不置顶，缺 coach_handled_at 就不标处理，
+    // 两个都缺就只写上墙字段。内容照样上墙。
     if (error && /featured_pinned/i.test(error.message || '')) {
       pinnedUnsupported = true;
       ({ error } = await supabase
         .from('student_history_records')
-        .update(base)
+        .update(withHandled)
+        .eq('external_id', pick.recordId));
+    }
+
+    if (error && /coach_handled_at/i.test(error.message || '')) {
+      handledUnsupported = true;
+      ({ error } = await supabase
+        .from('student_history_records')
+        .update(pinnedUnsupported ? base : { ...base, featured_pinned: Boolean(pick.pinned) })
         .eq('external_id', pick.recordId));
     }
 
@@ -154,6 +172,12 @@ async function main() {
     console.log('');
     console.log('⚠️  置顶未生效：库里没有 featured_pinned 列。');
     console.log('    跑 supabase/migrations/2026-08-02_featured_pinned.sql 后重跑本脚本即可补上。');
+  }
+  if (handledUnsupported) {
+    console.log('');
+    console.log('⚠️  未标记「已处理」：库里没有 coach_handled_at 列。');
+    console.log('    内容已经上墙，但教练台的待处理队列可能仍会列出它。');
+    console.log('    跑 supabase/migrations/20260813120000_coach_handled.sql 后即可。');
   }
   if (!DRY_RUN && ok) console.log('刷新 https://goodminton.fi/forum 查看。');
 }

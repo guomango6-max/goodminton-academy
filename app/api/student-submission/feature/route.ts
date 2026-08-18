@@ -89,25 +89,50 @@ export async function GET(req: Request) {
     return NextResponse.json({ submissions: [] });
   }
 
-  const { data, error } = await supabase
+  // payload / featured_excerpt 必须带上：教练台要显示学员写的原文，
+  // 只给标题的话没法判断这条值不值得精选，也没法照着写点评。
+  //
+  // source 是给教练台「待处理」区用的：只有 source='website' 才是学员自己
+  // 写的提交，'data/students' 是从 Obsidian 库回填的课次记录，没有学员正文，
+  // 混进待处理队列会把 7 条淹在 50 条里。
+  const columns =
+    'external_id, student_id, record_type, title, happened_at, created_at, source, featured, featured_angle, featured_category, featured_tier, coach_feedback, payload, featured_excerpt';
+
+  // coach_handled_at（20260813120000）和 featured_pinned（2026-08-02）都是后加的列，
+  // 不同环境跑到哪一步不一定。逐级降级，缺哪个丢哪个，教练台照旧能开：
+  // 待处理判定回落到旧规则（见 page.tsx 的 isPending），置顶状态则显示不出来。
+  //
+  // 顺序有讲究：第二档保留 featured_pinned。写成一档降级的话，只要 coach_handled_at
+  // 缺席就会把 featured_pinned 一起丢掉——而线上正是这个状态，教练台因此永远看不到
+  // 哪条置顶了（2026-08-18 上报「加精的帖子没有置顶」）。
+  const attempts = [
+    `${columns}, coach_handled_at, featured_pinned`,
+    `${columns}, featured_pinned`,
+    columns,
+  ];
+
+  let result = await supabase
     .from('student_history_records')
-    // payload / featured_excerpt 必须带上：教练台要显示学员写的原文，
-    // 只给标题的话没法判断这条值不值得精选，也没法照着写点评。
-    .select(
-      // source 是给教练台「待处理」区用的：只有 source='website' 才是学员自己
-      // 写的提交，'data/students' 是从 Obsidian 库回填的课次记录，没有学员正文，
-      // 混进待处理队列会把 7 条淹在 50 条里。
-      'external_id, student_id, record_type, title, happened_at, created_at, source, featured, featured_angle, featured_category, featured_tier, coach_feedback, payload, featured_excerpt',
-    )
+    .select(attempts[0])
     .order('created_at', { ascending: false })
     .limit(100);
 
-  if (error) {
-    console.error('[peer-wall-list-error]', error);
+  for (const selection of attempts.slice(1)) {
+    if (!result.error) break;
+    if (!/coach_handled_at|featured_pinned/i.test(result.error.message || '')) break;
+    result = await supabase
+      .from('student_history_records')
+      .select(selection)
+      .order('created_at', { ascending: false })
+      .limit(100);
+  }
+
+  if (result.error) {
+    console.error('[peer-wall-list-error]', result.error);
     return NextResponse.json({ error: 'Failed to load submissions.' }, { status: 502 });
   }
 
-  return NextResponse.json({ submissions: data || [] });
+  return NextResponse.json({ submissions: result.data || [] });
 }
 
 export async function POST(req: Request) {
@@ -137,7 +162,7 @@ export async function POST(req: Request) {
   const category = cleanText(body.category);
   if (!isPeerFeedCategory(category)) {
     return NextResponse.json(
-      { error: 'category must be one of correction | drill_seed | honest_stuck | good_question.' },
+      { error: 'category must be one of correction | drill_seed | honest_stuck | good_question | breakthrough.' },
       { status: 400 },
     );
   }
@@ -181,6 +206,16 @@ export async function POST(req: Request) {
   }
   if (!data) {
     return NextResponse.json({ error: 'Submission not found.' }, { status: 404 });
+  }
+
+  // “确认上墙”就是公开发布；发布成功后也应离开待处理队列。
+  // coach_handled_at 是后加列，旧库没有时忽略，不能反过来影响上墙成功。
+  const { error: handledError } = await supabase
+    .from('student_history_records')
+    .update({ coach_handled_at: new Date().toISOString() })
+    .eq('external_id', recordId);
+  if (handledError && !/coach_handled_at/i.test(handledError.message || '')) {
+    console.error('[peer-wall-feature-handled-error]', handledError);
   }
 
   // 英文版用的译文，在加精这一刻生成一次。
