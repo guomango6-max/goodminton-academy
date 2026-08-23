@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import { NextResponse } from 'next/server';
 import { resolveStudentLogin } from '@/lib/student-login';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { failureKey, recordLoginFailure } from '@/lib/login-failures';
 
 const NO_STORE_HEADERS = {
   'cache-control': 'no-store, no-cache, max-age=0, must-revalidate',
@@ -377,6 +378,7 @@ export async function POST(req: Request) {
   const { studentId } = resolveStudentLogin(body?.studentId, body?.accessCode);
 
   if (!studentId) {
+    await recordLoginFailure(req, failureKey(body?.studentId, body?.accessCode), 'student-data');
     return NextResponse.json({ error: '没有找到这个学员数据。' }, { status: 404, headers: NO_STORE_HEADERS });
   }
 

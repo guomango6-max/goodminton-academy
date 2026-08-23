@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { resolveStudentLogin } from '@/lib/student-login';
+import { failureKey, recordLoginFailure } from '@/lib/login-failures';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 type StudentSubmissionRow = {
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
     : resolveStudentLogin(body?.studentId, body?.accessCode);
 
   if (!studentId) {
+    await recordLoginFailure(req, failureKey(body?.studentId, body?.accessCode, body?.credential), 'student-submissions');
     return NextResponse.json({ error: 'Invalid student credential.' }, { status: 404 });
   }
 
@@ -56,3 +58,4 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ submissions });
 }
+

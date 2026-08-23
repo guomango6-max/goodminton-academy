@@ -8,14 +8,16 @@
 // 就要重输 ID 是没必要的摩擦。
 //
 // 但带过期时间，不是永久：这个凭据是一个五位短码，教练自己定性为半公开，
-// 而手机可能借人、可能是共用平板。90 天足够覆盖正常使用节奏，又给共用
-// 设备留了一个边界。「退出」按钮仍然立即清除。
+// 而手机可能借人、可能是共用平板。2026-08-23 从 90 天提到 180 天：芬兰
+// 暑假 2–3 个月不来是正常节奏，90 天会把季节性学员挡在门外（他们恰恰是
+// 最该被保住的人）。180 天覆盖暑假 + 常规间隔，共用设备边界仍在（真正
+// 半年不来的照样过期）。「退出」按钮仍然立即清除。
 
 const CREDENTIAL_KEY = 'goodminton-student-credential';
 const STUDENT_KEY = 'goodminton-student-current';
 const EXPIRY_KEY = 'goodminton-student-session-expires';
 
-const MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+const MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
 
 function expired() {
   try {
