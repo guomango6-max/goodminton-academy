@@ -11,6 +11,7 @@
 
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { getBadmintonBlogPosts } from './badminton-blog.ts';
 
 export type Lang = 'zh' | 'en';
 
@@ -189,13 +190,52 @@ export function toCard(article: ArticleRecord, lang: Lang): ArticleCard {
 
 /** 首页那三张卡。placement: hero 的另有用处，排除。 */
 export async function getHomeArticleCards(): Promise<Record<Lang, ArticleCard[]>> {
-  const articles = (await readAll())
-    .filter((article) => article.placement !== 'hero' && isPublishable(article))
-    .slice(0, 3);
-  return {
-    zh: articles.map((article) => toCard(article, 'zh')),
-    en: articles.map((article) => toCard(article, 'en')),
-  };
+  const localArticles = (await readAll())
+    .filter((article) => article.placement !== 'hero' && isPublishable(article));
+  const blogArticles = await getBadmintonBlogPosts();
+
+  function blogDate(date: string, lang: Lang) {
+    return new Intl.DateTimeFormat(lang === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: lang === 'zh' ? 'numeric' : 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(date));
+  }
+
+  function cardsFor(lang: Lang) {
+    const local = localArticles.map((article) => ({
+      sortDate: article.date,
+      card: toCard(article, lang),
+    }));
+    const external = blogArticles
+      .filter((article) => article.lang === lang)
+      .map((article) => ({
+        sortDate: article.pubDate,
+        card: {
+          title: article.title,
+          date: blogDate(article.pubDate, lang),
+          category: lang === 'zh' ? '羽毛球博客' : 'Badminton blog',
+          excerpt: article.description,
+          image: '/article-free.svg',
+          href: article.href,
+        },
+      }));
+
+    const seen = new Set<string>();
+    return [...local, ...external]
+      .sort((a, b) => Date.parse(b.sortDate) - Date.parse(a.sortDate))
+      .filter(({ card }) => {
+        const key = card.href || card.title;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 3)
+      .map(({ card }) => card);
+  }
+
+  return { zh: cardsFor('zh'), en: cardsFor('en') };
 }
 
 // ---- 正文渲染 ----------------------------------------------------------
