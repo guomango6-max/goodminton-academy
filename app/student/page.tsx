@@ -2887,7 +2887,12 @@ export default function StudentPage() {
     getCurrentStudentServerSnapshot,
   );
   const [activeStudent, setActiveStudent] = useState<StudentData | null>(null);
-  const student = activeStudent || savedStudent;
+  const [ignoreSavedStudent, setIgnoreSavedStudent] = useState(false);
+  const resolvedStudent = activeStudent || (ignoreSavedStudent ? null : savedStudent);
+  // Until the URL credential has been inspected, never reveal a saved profile.
+  // A shared browser may still contain another student's session snapshot.
+  const [checkingAutoLogin, setCheckingAutoLogin] = useState(true);
+  const student = checkingAutoLogin ? null : resolvedStudent;
   const [credential, setCredential] = useState('');
   const [loginStatus, setLoginStatus] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -2995,29 +3000,45 @@ export default function StudentPage() {
   }, [student]);
 
   useEffect(() => {
-    if (autoLoginStarted.current || student || loginLoading || typeof window === 'undefined') {
+    if (autoLoginStarted.current || loginLoading || typeof window === 'undefined') {
       return;
     }
 
     // 两个来源：URL 上带的一次性凭据，和本机存着的登录态。
-    //
-    // 后者是这次补的。此前这里只认 URL 参数，而「已登录」完全由学员快照
-    // 决定——于是任何只存了凭据、没存快照的入口（论坛身份门就是一个）都会
-    // 在这里被重新问一次 ID，哪怕 90 天的登录态还好好存着。
+    // URL 凭据必须优先于本机快照；共享设备上可能还留着上一位学员的资料。
     const urlCredential = new URLSearchParams(window.location.search).get('credential');
+    if (!urlCredential && resolvedStudent) {
+      const revealSavedStudentTimer = window.setTimeout(() => setCheckingAutoLogin(false), 0);
+      return () => window.clearTimeout(revealSavedStudentTimer);
+    }
+
     const autoCredential = urlCredential || readStudentCredential();
     if (!autoCredential) {
-      return;
+      const revealLoginTimer = window.setTimeout(() => setCheckingAutoLogin(false), 0);
+      return () => window.clearTimeout(revealLoginTimer);
     }
 
     autoLoginStarted.current = true;
     if (urlCredential) window.history.replaceState(null, '', '/student');
     const autoLoginTimer = window.setTimeout(() => {
+      if (urlCredential) {
+        // Do not keep showing the previous student's profile while a new URL
+        // credential is being verified, or after that verification fails.
+        setIgnoreSavedStudent(true);
+        setActiveStudent(null);
+        try {
+          clearStudentSession();
+          window.dispatchEvent(new Event(STUDENT_SESSION_EVENT));
+        } catch {
+          // React state still prevents the stale profile from being displayed.
+        }
+      }
+      setCheckingAutoLogin(false);
       void loginStudent(autoCredential, { silent: !urlCredential });
     }, 0);
 
     return () => window.clearTimeout(autoLoginTimer);
-  }, [student, loginLoading, loginStudent]);
+  }, [resolvedStudent, loginLoading, loginStudent]);
 
   if (!student) {
     return (
