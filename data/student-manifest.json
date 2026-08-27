@@ -229,5 +229,13 @@
     "loginId": "as30",
     "name": "Arsenii",
     "source": "student-arsenii.md"
+  },
+  {
+    "studentId": "he-jiayu",
+    "file": "he-jiayu.json",
+    "alias": "hjy",
+    "loginId": "hjy66",
+    "name": "何佳煜",
+    "source": "student-he-jiayu.md"
   }
 ]
