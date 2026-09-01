@@ -2938,6 +2938,7 @@ export default function StudentPage() {
       }
 
       setActiveStudent(payload.student);
+      setCheckingAutoLogin(false);
       try {
         saveStudentSession(
           typeof rawCredential === 'string' ? rawCredential.trim() : `${rawCredential.studentId || ''}${rawCredential.accessCode || ''}`,
@@ -2960,6 +2961,7 @@ export default function StudentPage() {
         }
         setLoginStatus('');
       } else {
+        setCheckingAutoLogin(false);
         setLoginError(
           error instanceof DOMException && error.name === 'AbortError'
             ? t.timeout
