@@ -167,7 +167,7 @@ let cachedCurrentStudent: StudentData | null = null;
 const studentCopy = {
   zh: {
     portal: '学员图谱',
-    nav: ['总览', '课后总结', '训练日志', '比赛复盘', '家庭作业', '当前任务', '个人能力', '成就勋章'],
+    nav: ['总览', '课后总结', '上课记录', '比赛复盘', '家庭作业', '当前任务', '个人能力', '成就勋章'],
     logout: '退出',
     breadcrumb: '学员图谱',
     trainingData: (name: string) => `${name} 的训练数据`,

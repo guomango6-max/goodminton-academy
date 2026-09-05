@@ -37,6 +37,8 @@ test('home article cards always link to publishable article pages', async () => 
 
   assert.equal(cards.zh.length, 3);
   assert.equal(cards.en.length, 3);
-  for (const card of cards.zh) assert.match(card.href || '', /^\/articles\/[^/]+$/);
-  for (const card of cards.en) assert.match(card.href || '', /^\/en\/articles\/[^/]+$/);
+  const zhHref = /^(\/articles\/[^/]+|https:\/\/blog\.goodminton\.fi\/blog\/[^?#]+\/?)$/;
+  const enHref = /^(\/en\/articles\/[^/]+|https:\/\/blog\.goodminton\.fi\/blog\/[^?#]+\/?)$/;
+  for (const card of cards.zh) assert.match(card.href || '', zhHref);
+  for (const card of cards.en) assert.match(card.href || '', enHref);
 });

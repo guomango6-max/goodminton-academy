@@ -1063,7 +1063,7 @@ export default function ForumPage() {
       try {
         // 带上语言：英文版由服务端换成 featured_en 里的译文，没翻到的字段
         // 仍然回中文原文。
-        const response = await fetch(`/api/peer-feed?limit=20&lang=${lang}`);
+        const response = await fetch(`/wall-data?limit=20&lang=${lang}`);
         const payload = (await response.json()) as { items?: PeerFeedItem[] };
         if (!isMounted) return;
         if (response.ok && payload.items?.length) {

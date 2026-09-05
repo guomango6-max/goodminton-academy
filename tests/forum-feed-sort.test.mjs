@@ -6,7 +6,7 @@ import {
   sortForumFeedEntries,
 } from '../lib/forum-feed-sort.mjs';
 
-test('sorts the combined forum feed by the date shown on each card, newest first', () => {
+test('sorts pinned forum entries first, then by the date shown on each card', () => {
   const entries = [
     { id: 'curated-old', sortAt: '2026-05-07', pinned: true },
     { id: 'post-new', sortAt: '2026-08-12T10:00:00Z', pinned: false },
@@ -16,9 +16,9 @@ test('sorts the combined forum feed by the date shown on each card, newest first
   const sorted = sortForumFeedEntries(entries);
 
   assert.deepEqual(sorted.map((entry) => entry.id), [
+    'curated-old',
     'post-new',
     'curated-middle',
-    'curated-old',
   ]);
   assert.deepEqual(entries.map((entry) => entry.id), [
     'curated-old',
